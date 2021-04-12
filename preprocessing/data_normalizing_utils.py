@@ -152,7 +152,9 @@ def power_normalization(data:np.ndarray, return_scaler:bool=False,
         return data, scaler
     return data
 
-
+def image_scaling_to_unit_range(img:np.ndarray)->np.ndarray:
+    # TODO: write description
+    return img/255.
 
 
 if __name__=="__main__":
