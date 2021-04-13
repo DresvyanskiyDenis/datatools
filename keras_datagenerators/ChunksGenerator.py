@@ -17,7 +17,7 @@ __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 from sklearn.preprocessing import StandardScaler
 
-from preprocessing.audio_preprocessing_utils import cut_data_on_chunks, load_wav_file, \
+from preprocessing.data_preprocessing.audio_preprocessing_utils import cut_data_on_chunks, \
     extract_opensmile_features_from_audio_sequence, extract_mfcc_from_audio_sequence, \
     extract_subwindow_EGEMAPS_from_audio_sequence, extract_HLDs_from_LLDs, extract_combined_features_with_sibwindows
 

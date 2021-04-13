@@ -4,12 +4,9 @@
 # TODO: write description of the file
 """
 import random
-from multiprocessing.dummy import Process
-from multiprocessing.pool import Pool
-from typing import Optional, Dict, List, Tuple, Union
+from typing import Optional, Dict, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import scipy.signal as sps
 import os
 import tensorflow as tf
@@ -22,7 +19,7 @@ __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 from sklearn.preprocessing import StandardScaler
 
-from preprocessing.audio_preprocessing_utils import cut_data_on_chunks, load_wav_file, \
+from preprocessing.data_preprocessing.audio_preprocessing_utils import cut_data_on_chunks, load_wav_file, \
     extract_opensmile_features_from_audio_sequence, extract_mfcc_from_audio_sequence, \
     extract_subwindow_EGEMAPS_from_audio_sequence, extract_HLDs_from_LLDs
 
