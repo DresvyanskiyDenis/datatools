@@ -2,12 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="daa0b559-4a67-4c38-be44-a40896582039" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/preprocessing/data_preprocessing/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/keras_datagenerators/ChunksGenerator.py" beforeDir="false" afterPath="$PROJECT_DIR$/keras_datagenerators/ChunksGenerator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/keras_datagenerators/ChunksGenerator_loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/keras_datagenerators/ChunksGenerator_loader.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/audio_preprocessing_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing/data_preprocessing/audio_preprocessing_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/image_preprocessing_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing/data_preprocessing/image_preprocessing_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/video_preprocessing_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocessing/data_preprocessing/video_preprocessing_utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/preprocessing/face_recognition_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/datatools.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/datatools.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,12 +33,41 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="settings.github" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Denis\PycharmProjects\datatools\preprocessing\data_preprocessing" />
       <recent name="C:\Users\Denis\PycharmProjects\datatools\keras_datagenerators" />
     </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="face_recognition_utils" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="datatools" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/preprocessing" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/preprocessing/face_recognition_utils.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.face_recognition_utils" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -81,7 +108,14 @@
       <option name="project" value="LOCAL" />
       <updated>1618340438427</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="New package was created - data_preprocessing. Now, all the preprocessing functions devoted to data (audio, visual, etc.) is located in data_preprocessing package.">
+      <created>1618341699647</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1618341699647</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -102,17 +136,22 @@
     <MESSAGE value="The names of files with audio generators were changed." />
     <MESSAGE value="The file represented Image loading and preproecssing (as generator) was added." />
     <MESSAGE value="The extracting frames from all videos function was changes so as now it walk through all the directories and subdirectories of defined directory." />
-    <option name="LAST_COMMIT_MESSAGE" value="The extracting frames from all videos function was changes so as now it walk through all the directories and subdirectories of defined directory." />
+    <MESSAGE value="New package was created - data_preprocessing. Now, all the preprocessing functions devoted to data (audio, visual, etc.) is located in data_preprocessing package." />
+    <option name="LAST_COMMIT_MESSAGE" value="New package was created - data_preprocessing. Now, all the preprocessing functions devoted to data (audio, visual, etc.) is located in data_preprocessing package." />
   </component>
   <component name="WindowStateProjectService">
     <state x="361" y="74" key="#Notifications" timestamp="1617633476672">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="361" y="74" key="#Notifications/0.0.1536.824@0.0.1536.824" timestamp="1617633476672" />
-    <state x="436" y="13" key="CommitChangelistDialog2" timestamp="1618340437407">
+    <state x="524" y="123" key="#xdebugger.evaluate" timestamp="1618345115787">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="436" y="13" key="CommitChangelistDialog2/0.0.1536.824@0.0.1536.824" timestamp="1618340437407" />
+    <state x="524" y="123" key="#xdebugger.evaluate/0.0.1536.824@0.0.1536.824" timestamp="1618345115787" />
+    <state x="62" y="13" key="CommitChangelistDialog2" timestamp="1618347977246">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="62" y="13" key="CommitChangelistDialog2/0.0.1536.824@0.0.1536.824" timestamp="1618347977246" />
     <state x="549" y="157" key="FileChooserDialogImpl" timestamp="1617633760953">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -121,14 +160,46 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="638" y="311" key="Github.ShareDialog/0.0.1536.824@0.0.1536.824" timestamp="1617633804071" />
-    <state x="279" y="58" key="SettingsEditor" timestamp="1617633441679">
+    <state width="1515" height="261" key="GridCell.Tab.0.bottom" timestamp="1618347931809">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="279" y="58" key="SettingsEditor/0.0.1536.824@0.0.1536.824" timestamp="1617633441679" />
-    <state x="361" y="148" key="Vcs.Push.Dialog.v2" timestamp="1618340440286">
+    <state width="1515" height="261" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state width="1515" height="261" key="GridCell.Tab.0.center" timestamp="1618347931809">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="361" y="148" key="Vcs.Push.Dialog.v2/0.0.1536.824@0.0.1536.824" timestamp="1618340440286" />
+    <state width="1515" height="261" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state width="1515" height="261" key="GridCell.Tab.0.left" timestamp="1618347931809">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state width="1515" height="261" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state width="1515" height="261" key="GridCell.Tab.0.right" timestamp="1618347931809">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state width="1515" height="261" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state width="1515" height="261" key="GridCell.Tab.1.bottom" timestamp="1618347931809">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state width="1515" height="261" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state width="1515" height="261" key="GridCell.Tab.1.center" timestamp="1618347931809">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state width="1515" height="261" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state width="1515" height="261" key="GridCell.Tab.1.left" timestamp="1618347931809">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state width="1515" height="261" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state width="1515" height="261" key="GridCell.Tab.1.right" timestamp="1618347931809">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state width="1515" height="261" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
+    <state x="279" y="58" key="SettingsEditor" timestamp="1618344851033">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="279" y="58" key="SettingsEditor/0.0.1536.824@0.0.1536.824" timestamp="1618344851033" />
+    <state x="361" y="148" key="Vcs.Push.Dialog.v2" timestamp="1618348112024">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="361" y="148" key="Vcs.Push.Dialog.v2/0.0.1536.824@0.0.1536.824" timestamp="1618348112024" />
     <state x="477" y="240" key="com.intellij.ide.util.TipDialog" timestamp="1618338445096">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -141,5 +212,26 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="431" y="145" width="672" height="678" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1617632861664" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/preprocessing/face_recognition_utils.py</url>
+          <line>6</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/preprocessing/face_recognition_utils.py</url>
+          <line>5</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/preprocessing/face_recognition_utils.py</url>
+          <line>34</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
