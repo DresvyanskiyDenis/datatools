@@ -5,6 +5,8 @@ TODO: write description of module
 """
 
 import os
+from typing import Optional
+
 import cv2
 import re
 
@@ -15,7 +17,7 @@ __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 
-def extract_frames_from_videofile(input_path:str, output_path:str)->None:
+def extract_frames_from_videofile(input_path:str, output_path:str, every_n_frame:Optional[int]=None)->None:
     # TODO: add description
     videofile=cv2.VideoCapture(input_path)
     # check if videofile was opened:
@@ -28,11 +30,17 @@ def extract_frames_from_videofile(input_path:str, output_path:str)->None:
     # creating directories for saving files
     if not os.path.exists(os.path.join(output_path,video_filename,video_filename+'_frames')):
         os.makedirs(os.path.join(output_path,video_filename,video_filename+'_frames'), exist_ok=True)
-    currentframe=0
+    currentframe=-1 # we will start from frame with number 0 (see next, in few lines, we increment currentframe
+                    # right after reading it)
+    # if every_n_frame is defined, skip every n frames
+    every_frame=every_n_frame if not every_n_frame is None else 1
     while (True):
         # reading from frame
         ret, frame = videofile.read()
-
+        currentframe += 1
+        # if currentframe is not integer divisible by every_frame, skip it
+        if not currentframe%every_frame==0:
+            continue
         if ret:
             # if video is still left continue creating images
             current_filename = video_filename + str(currentframe) + '.jpg'
@@ -40,7 +48,6 @@ def extract_frames_from_videofile(input_path:str, output_path:str)->None:
             cv2.imwrite(os.path.join(output_path,video_filename, video_filename+'_frames', current_filename), frame)
             # increasing counter so that it will
             # show how many frames are created
-            currentframe += 1
         else:
             break
     # write meta data of videofile
@@ -53,7 +60,7 @@ def extract_frames_from_videofile(input_path:str, output_path:str)->None:
     cv2.destroyAllWindows()
 
 
-def extract_frames_from_all_videos_in_dir(input_dir:str, output_dir:str)-> None:
+def extract_frames_from_all_videos_in_dir(input_dir:str, output_dir:str, every_n_frame:Optional[int]=None)-> None:
     # TODO: add description
     absolute_paths_to_videos=[]
     # walk through all the subdirectories and find all the videofiles and their absolute paths
@@ -66,13 +73,12 @@ def extract_frames_from_all_videos_in_dir(input_dir:str, output_dir:str)-> None:
         os.makedirs(output_dir, exist_ok=True)
     # extract frames file-by-file
     for absolute_path_to_video in absolute_paths_to_videos:
-        video_filename=re.split(r'\\|/',absolute_path_to_video)[-1].split('.')[0]
         extract_frames_from_videofile(input_path=absolute_path_to_video,
-                                      output_path=output_dir)
+                                      output_path=output_dir, every_n_frame=every_n_frame)
 
 
 
 if __name__ == '__main__':
-    input_path=r'E:\Databases\DAiSEE\DAiSEE\DataSet\Train'
-    output_path=r'E:\Databases\DAiSEE\frames'
-    extract_frames_from_all_videos_in_dir(input_path, output_path)
+    input_path=r'D:\Databases\DAiSEE\DAiSEE\DataSet\Train'
+    output_path=r'D:\Databases\DAiSEE\frames'
+    extract_frames_from_all_videos_in_dir(input_path, output_path, every_n_frame=5)
