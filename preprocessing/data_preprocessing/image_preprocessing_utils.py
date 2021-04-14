@@ -3,6 +3,7 @@
 """
 TODO: write description of module
 """
+from typing import Tuple
 
 from PIL import Image
 import numpy as np
@@ -25,3 +26,8 @@ def save_image(img:np.ndarray, path_to_output:str)->None:
     img = Image.fromarray(img)
     img.save(path_to_output)
 
+def resize_image(img:np.ndarray, new_size:Tuple[int, int])-> np.ndarray:
+    # TODO: write description
+    img=Image.fromarray(img)
+    img=img.resize(new_size)
+    return np.array(img)
