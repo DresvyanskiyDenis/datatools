@@ -8,6 +8,9 @@ def recognize_the_most_confident_person_retinaFace(im:np.ndarray, detector:objec
                                                    threshold:float=0.5)->Tuple[int,...]:
     # TODO: write description
     bboxes, landmark = detector.detect(im, threshold=threshold, scale=1.0)
+    # check if there are some found bboxes
+    if len(bboxes)==0:
+        return tuple()
     # find the most confident face (hopefully, it is that, which we need)
     max_conf=bboxes[0][-1]
     bbox_most_conf=bboxes[0][:-1]
