@@ -8,6 +8,7 @@ from typing import Tuple
 from PIL import Image
 import numpy as np
 import pandas as pd
+from scipy import ndimage
 from skimage import transform, exposure
 
 __author__ = "Denis Dresvyanskiy"
@@ -71,4 +72,38 @@ def change_brightness(img:np.ndarray, brightness_factor:float)->np.ndarray:
     return modified_image
 
 def zoom_image(img:np.ndarray, zoom_factor:float)->np.ndarray:
-    pass
+    # TODO: write description
+    result_image=ndimage.zoom(img, zoom_factor)
+    return result_image
+
+def channel_random_noise(img:np.ndarray, num_channel:int, std:float)->np.ndarray:
+    # TODO: write description
+    image_size=img.shape[:2]
+    noise=np.random.normal(scale=std,size=image_size)
+    modified_image=img.copy()
+    modified_image[:,:,num_channel]+=noise
+    return modified_image
+
+def crop_image(img:np.ndarray, bbox:Tuple[int,int,int,int])->np.ndarray:
+    # TODO: write description
+    x0,x1,y0,y1 = bbox
+    if x0<0 or x1>img.shape[1] or y0<0 or y1>img.shape[0]:
+        raise AttributeError("Some coordinates of bbox are negative or greater than "
+                             "the image size. Provided bbox:%s"%bbox)
+    return img[y0:y1, x0:x1]
+
+def blur_image(img:np.ndarray, sigma:float=3)->np.ndarray:
+    # TODO: write description
+    modified_image=ndimage.gaussian_filter(img, sigma=sigma)
+    return modified_image
+
+def get_image_with_worse_quality(img:np.ndarray, rescaling_factor:float)->np.ndarray:
+    # TODO: write description
+    modified_image=transform.rescale(img, rescaling_factor, anti_aliasing=False)
+    modified_image=transform.resize(modified_image, img.shape[:2])
+    return modified_image
+
+def scale_img_to_0_1(img:np.ndarray)->np.ndarray:
+    # TODO: write description
+    modified_image=img/255.
+    return modified_image
