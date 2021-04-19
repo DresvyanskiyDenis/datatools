@@ -12,19 +12,18 @@ import numpy as np
 
 from preprocessing.data_preprocessing.image_preprocessing_utils import shear_image, rotate_image, flip_image, \
     shift_image, change_brightness, zoom_image, crop_image, channel_random_noise, blur_image, \
-    get_image_with_worse_quality
+    get_image_with_worse_quality, load_image
 
 
 class ImageDataLoader(Sequence):
     """TODO:write description"""
     horizontal_flip:float
     vertical_flip:float
-    horizontal_shift:float
-    vertical_shift:float
+    horizontal:float
     brightness:float
     shearing:float
     zooming:float
-    croping:float
+    random_cropping_out:float
     bluring:float
     rotation:float
     scaling:float
@@ -36,20 +35,19 @@ class ImageDataLoader(Sequence):
     batch_size:int
 
     def __init__(self, paths_with_labels:pd.DataFrame,batch_size:int,
-                 horizontal_flip:Optional[float]=None, vertical_flip:Optional[float]=None, horizontal_shift:Optional[float]=None,
-                 vertical_shift:Optional[float]=None, brightness:Optional[float]=None, shearing:Optional[float]=None,
-                 zooming:Optional[float]=None, croping:Optional[float]=None, rotation:Optional[float]=None, scaling:Optional[float]=None,
+                 horizontal_flip:Optional[float]=None, vertical_flip:Optional[float]=None, shift:Optional[float]=None,
+                 brightness:Optional[float]=None, shearing:Optional[float]=None,zooming:Optional[float]=None,
+                 random_cropping_out:Optional[float]=None, rotation:Optional[float]=None, scaling:Optional[float]=None,
                  channel_random_noise:Optional[float]=None, bluring:Optional[float]=None, worse_quality:Optional[float]=None,
                  mixup:Optional[bool]=None):
         # TODO: write description
         self.horizontal_flip=horizontal_flip
         self.vertical_flip=vertical_flip
-        self.horizontal_shift=horizontal_shift
-        self.vertical_shift=vertical_shift
+        self.shift=shift
         self.brightness=brightness
         self.shearing=shearing
         self.zooming=zooming
-        self.croping=croping
+        self.random_cropping_out=random_cropping_out
         self.rotation=rotation
         self.scaling=scaling
         self.channel_random_noise=channel_random_noise
@@ -70,11 +68,8 @@ class ImageDataLoader(Sequence):
         if vertical_flip<0 or vertical_flip>1:
             raise AttributeError('Parameter vertical_flip should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if horizontal_shift<0 or horizontal_shift>1:
-            raise AttributeError('Parameter horizontal_shift should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
-        if vertical_shift<0 or vertical_shift>1:
-            raise AttributeError('Parameter vertical_shift should be float number between 0 and 1, '
+        if shift<0 or shift>1:
+            raise AttributeError('Parameter shift should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
         if brightness<0 or brightness>1:
             raise AttributeError('Parameter brightness should be float number between 0 and 1, '
@@ -85,8 +80,8 @@ class ImageDataLoader(Sequence):
         if zooming<0 or zooming>1:
             raise AttributeError('Parameter zooming should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if croping<0 or croping>1:
-            raise AttributeError('Parameter croping should be float number between 0 and 1, '
+        if random_cropping_out<0 or random_cropping_out>1:
+            raise AttributeError('Parameter random_cropping_out should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
         if rotation<0 or rotation>1:
             raise AttributeError('Parameter rotation should be float number between 0 and 1, '
@@ -210,10 +205,63 @@ class ImageDataLoader(Sequence):
         return img
 
 
-    def _preprocess_one_image(self, img:np.ndarray):
-        # TODO: implement it
+    def _load_and_preprocess_one_image(self, img:np.ndarray):
+        # TODO: write description
+        img=self
         pass
 
+    def _load_image(self, path):
+        # TODO: write description
+        img=load_image(path)
+        return img
+
+    def _augment_one_image(self, img:np.ndarray):
+        # TODO: write description
+        # horizontal flipping
+        if not self.horizontal_flip is None and self._get_answer_with_prob(self.horizontal_flip):
+            img=self._flip_image_horizontal(img)
+        # vertical flipping
+        if not self.vertical_flip is None and self._get_answer_with_prob(self.vertical_flip):
+            img = self._flip_image_vertical(img)
+        # shifting
+        if not self.shift is None and self._get_answer_with_prob(self.shift):
+            img = self._shift_image(img)
+        # brightness changing
+        if not self.brightness is None and self._get_answer_with_prob(self.brightness):
+            img = self._change_brightness_image(img)
+        # shearing
+        if not self.shearing is None and self._get_answer_with_prob(self.shearing):
+            img = self._shear_image(img)
+        # zooming
+        if not self.zooming is None and self._get_answer_with_prob(self.zooming):
+            img = self._zoom_image(img)
+        # channel random noise
+        if not self.channel_random_noise is None and self._get_answer_with_prob(self.channel_random_noise):
+            img = self._add_noise_on_one_channel(img)
+        # rotation
+        if not self.rotation is None and self._get_answer_with_prob(self.rotation):
+            img = self._rotate_image(img)
+        # random cropping out
+        if not self.random_cropping_out is None and self._get_answer_with_prob(self.random_cropping_out):
+            img = self._random_cutting_out(img)
+        # bluring
+        if not self.bluring is None and self._get_answer_with_prob(self.bluring):
+            img = self._blur_image(img)
+        # worse quality
+        if not self.worse_quality is None and self._get_answer_with_prob(self.worse_quality):
+            img = self._worse_quality(img)
+        # return augmented image
+        return img
+
+    def _get_answer_with_prob(self, prob:float):
+        # TODO: write description
+        if prob<0 or prob>1:
+            raise AttributeError('Probability should be a float number between 0 and 1. Gor %s.'%prob)
+        # roll the dice
+        rolled_prob=np.random.uniform(0,1)
+        if rolled_prob<prob:
+            return True
+        return False
 
     def on_epoch_end(self):
         # TODO: write description
