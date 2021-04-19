@@ -230,6 +230,24 @@ class ImageDataLoader(Sequence):
             result_data[idx_filename]=result[filename]
         return (result_data.astype('float32'), result_labels)
 
+    def _load_and_preprocess_batch_ONE_WORKER(self, idx:int)-> Tuple[np.ndarray, np.ndarray]:
+        filenames = self.paths_with_labels['filename'].iloc[
+                    idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
+        labels = self.paths_with_labels['class'].iloc[
+                 idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
+        result=[]
+        for filename in filenames:
+            result.append(self._load_and_preprocess_one_image(filename))
+        result = dict(result)
+        # create batch output
+        image_shape = result[filenames[0]].shape
+        result_data = np.zeros((self.batch_size,) + image_shape)
+        result_labels = labels.reshape((-1, 1))
+        for idx_filename in range(filenames.shape[0]):
+            filename = filenames[idx_filename]
+            result_data[idx_filename] = result[filename]
+        return (result_data.astype('float32'), result_labels)
+
     def _load_and_preprocess_one_image(self, path: str) -> Tuple[np.ndarray, str]:
         # TODO: write description
         img = self._load_image(path)
@@ -296,10 +314,10 @@ class ImageDataLoader(Sequence):
         # just shuffle rows in dataframe
         self.paths_with_labels = self.paths_with_labels.sample(frac=1)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index)->Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
-        # TODO: implement it
-        pass
+        data, labels = self._load_and_preprocess_batch_ONE_WORKER(index)
+        return (data, labels)
 
     def __len__(self) -> int:
         # TODO: write description
