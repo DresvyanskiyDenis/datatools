@@ -35,7 +35,7 @@ class ImageDataLoader(Sequence):
     paths_with_labels: pd.DataFrame
     batch_size: int
 
-    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Callable,
+    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Optional[Callable]=None,
                  horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
                  shift: Optional[float] = None,
                  brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
@@ -62,46 +62,46 @@ class ImageDataLoader(Sequence):
         self.batch_size = batch_size
         self.preprocess_function = preprocess_function
         # checking the provided DataFrame
-        if paths_with_labels.columns != ['filename', 'class']:
+        if paths_with_labels.columns.to_list() != ['filename', 'class']:
             raise AttributeError(
                 'DataFrame columns should be \'filename\' and \'class\'. Got %s.' % paths_with_labels.columns)
         if paths_with_labels.shape[0] == 0:
             raise AttributeError('DataFrame is empty.')
         # check if all provided variables are in the allowed range (usually, from 0..1 or bool)
-        if horizontal_flip < 0 or horizontal_flip > 1:
+        if horizontal_flip is not None and (horizontal_flip < 0 or horizontal_flip > 1):
             raise AttributeError('Parameter horizontal_flip should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if vertical_flip < 0 or vertical_flip > 1:
+        if vertical_flip is not None and ( vertical_flip < 0 or vertical_flip > 1):
             raise AttributeError('Parameter vertical_flip should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if shift < 0 or shift > 1:
+        if shift is not None and (shift < 0 or shift > 1):
             raise AttributeError('Parameter shift should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if brightness < 0 or brightness > 1:
+        if brightness is not None and (brightness < 0 or brightness > 1):
             raise AttributeError('Parameter brightness should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if shearing < 0 or shearing > 1:
+        if shearing is not None and (shearing < 0 or shearing > 1):
             raise AttributeError('Parameter shearing should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if zooming < 0 or zooming > 1:
+        if zooming is not None and (zooming < 0 or zooming > 1):
             raise AttributeError('Parameter zooming should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if random_cropping_out < 0 or random_cropping_out > 1:
+        if random_cropping_out is not None and  (random_cropping_out < 0 or random_cropping_out > 1):
             raise AttributeError('Parameter random_cropping_out should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if rotation < 0 or rotation > 1:
+        if rotation is not None and (rotation < 0 or rotation > 1):
             raise AttributeError('Parameter rotation should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if channel_random_noise < 0 or channel_random_noise > 1:
+        if channel_random_noise is not None and (channel_random_noise < 0 or channel_random_noise > 1):
             raise AttributeError('Parameter channel_random_noise should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if bluring < 0 or bluring > 1:
+        if bluring is not None and (bluring < 0 or bluring > 1):
             raise AttributeError('Parameter bluring should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if worse_quality < 0 or worse_quality > 1:
+        if worse_quality is not None and (worse_quality < 0 or worse_quality > 1):
             raise AttributeError('Parameter worse_quality should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if not isinstance(mixup, bool):
+        if mixup is not None and not isinstance(mixup, bool):
             raise AttributeError('Parameter mixup should have bool type.')
 
     def _shear_image(self, img: np.ndarray):
@@ -232,16 +232,16 @@ class ImageDataLoader(Sequence):
 
     def _load_and_preprocess_batch_ONE_WORKER(self, idx:int)-> Tuple[np.ndarray, np.ndarray]:
         filenames = self.paths_with_labels['filename'].iloc[
-                    idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
+                    idx * self.batch_size:(idx+1) * self.batch_size].values.flatten()
         labels = self.paths_with_labels['class'].iloc[
-                 idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
+                 idx * self.batch_size:(idx+1) * self.batch_size ].values.flatten()
         result=[]
         for filename in filenames:
             result.append(self._load_and_preprocess_one_image(filename))
         result = dict(result)
         # create batch output
         image_shape = result[filenames[0]].shape
-        result_data = np.zeros((self.batch_size,) + image_shape)
+        result_data = np.zeros((filenames.shape[0],) + image_shape)
         result_labels = labels.reshape((-1, 1))
         for idx_filename in range(filenames.shape[0]):
             filename = filenames[idx_filename]
@@ -254,7 +254,7 @@ class ImageDataLoader(Sequence):
         img = self._augment_one_image(img)
         if not self.scaling is None:
             img = img * self.scaling
-        return (img, path)
+        return (path, img)
 
     def _load_image(self, path):
         # TODO: write description
