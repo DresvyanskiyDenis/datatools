@@ -3,8 +3,8 @@
 """
 TODO: write description of module
 """
-
-from typing import Optional
+import multiprocessing
+from typing import Optional, Callable, Tuple
 
 from tensorflow.keras.utils import Sequence
 import pandas as pd
@@ -30,11 +30,12 @@ class ImageDataLoader(Sequence):
     channel_random_noise: float
     worse_quality: float
     mixup: bool
+    preprocess_function: Callable
 
     paths_with_labels: pd.DataFrame
     batch_size: int
 
-    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int,
+    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Callable,
                  horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
                  shift: Optional[float] = None,
                  brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
@@ -59,6 +60,7 @@ class ImageDataLoader(Sequence):
         self.mixup = mixup
         self.paths_with_labels = paths_with_labels
         self.batch_size = batch_size
+        self.preprocess_function = preprocess_function
         # checking the provided DataFrame
         if paths_with_labels.columns != ['filename', 'class']:
             raise AttributeError(
@@ -207,10 +209,34 @@ class ImageDataLoader(Sequence):
         img = get_image_with_worse_quality(img, rescaling_factor=randomly_picked_param)
         return img
 
-    def _load_and_preprocess_one_image(self, img: np.ndarray):
+    def _load_and_preprocess_batch(self, idx: int,
+                                   workers: int = multiprocessing.cpu_count()
+                                   ) -> Tuple[np.ndarray, np.ndarray]:
+        filenames = self.paths_with_labels['filename'].iloc[
+                    idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
+        labels = self.paths_with_labels['class'].iloc[
+                 idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
+        with multiprocessing.Pool(processes=workers) as pool:
+            result = pool.starmap(self._load_and_preprocess_batch, filenames)
+            pool.close()
+            pool.join()
+        result = dict(result)
+        # create batch output
+        image_shape = result[filenames[0]].shape
+        result_data = np.zeros((self.batch_size,) + image_shape)
+        result_labels=labels.reshape((-1,1))
+        for idx_filename in range(filenames.shape[0]):
+            filename = filenames[idx_filename]
+            result_data[idx_filename]=result[filename]
+        return (result_data.astype('float32'), result_labels)
+
+    def _load_and_preprocess_one_image(self, path: str) -> Tuple[np.ndarray, str]:
         # TODO: write description
-        img = self
-        pass
+        img = self._load_image(path)
+        img = self._augment_one_image(img)
+        if not self.scaling is None:
+            img = img * self.scaling
+        return (img, path)
 
     def _load_image(self, path):
         # TODO: write description
@@ -277,5 +303,5 @@ class ImageDataLoader(Sequence):
 
     def __len__(self) -> int:
         # TODO: write description
-        num_steps = np.ceil(self.paths_with_labels.shape[0] / self.batch_size)
+        num_steps = int(np.ceil(self.paths_with_labels.shape[0] / self.batch_size))
         return num_steps
