@@ -13,11 +13,11 @@ TODO: write description of module
 import math
 import shutil
 import time
+import matplotlib.pyplot as plt
 from typing import Optional, Tuple, Dict, NamedTuple
 
 import numpy as np
 import pandas as pd
-import cv2
 import os
 import tensorflow as tf
 
@@ -98,7 +98,22 @@ def tmp_model()->tf.keras.Model:
     result_model=tf.keras.Model(inputs=model_tmp.inputs, outputs=[x])
     return result_model
 
+def plot_batch_of_images(img:np.ndarray)->None:
+    batch_size=img.shape[0]
+    fig = plt.figure(figsize=(20, 20))
+    columns = int(math.sqrt(batch_size))
+    rows = int(math.sqrt(batch_size))
 
+    # ax enables access to manipulate each of subplots
+    ax = []
+
+    for i in range(columns * rows):
+        image=img[i]
+        # create subplot and append to ax
+        ax.append(fig.add_subplot(rows, columns, i + 1))
+        ax[-1].set_title("ax:" + str(i))  # set title
+        plt.imshow(image)
+    plt.show()  # finally, render the plot
 
 
 
@@ -106,15 +121,15 @@ def tmp_model()->tf.keras.Model:
 
 if __name__ == '__main__':
     # params
-    path_to_train_frames=r'E:\Databases\DAiSEE\DAiSEE\train_preprocessed\sorted_faces'
-    path_to_train_labels=r'E:\Databases\DAiSEE\DAiSEE\Labels\TrainLabels.csv'
-    path_to_dev_frames=r'E:\Databases\DAiSEE\DAiSEE\dev_preprocessed\sorted_faces'
-    path_to_dev_labels=r'E:\Databases\DAiSEE\DAiSEE\Labels\ValidationLabels.csv'
+    path_to_train_frames=r'D:\Databases\DAiSEE\DAiSEE\train_preprocessed\sorted_faces'
+    path_to_train_labels=r'D:\Databases\DAiSEE\DAiSEE\Labels\TrainLabels.csv'
+    path_to_dev_frames=r'D:\Databases\DAiSEE\DAiSEE\dev_preprocessed\sorted_faces'
+    path_to_dev_labels=r'D:\Databases\DAiSEE\DAiSEE\Labels\ValidationLabels.csv'
     '''output_path=r'D:\Databases\DAiSEE\dev_preprocessed\sorted_faces'
     sort_images_according_their_class(path_to_images=path_to_dev_frames, output_path=output_path,
                                       path_to_labels=path_to_dev_labels)'''
     input_shape=(224,224,3)
-    batch_size=32
+    batch_size=36
     paths_with_labels=pd.DataFrame(columns=['filename', 'class'])
     filenames=[os.path.join(path_to_train_frames, "1",filename) for filename
                in os.listdir(os.path.join(path_to_train_frames, "1"))]
@@ -131,15 +146,16 @@ if __name__ == '__main__':
     generator=ImageDataLoader(paths_with_labels=paths_with_labels, batch_size=batch_size, preprocess_function=None,
                  horizontal_flip = None, vertical_flip = None,
                  shift= None,
-                 brightness= None, shearing= 0.5, zooming = None,
-                 random_cropping_out= None, rotation= None,
-                 scaling= None,
+                 brightness= None, shearing= None, zooming = None,
+                 random_cropping_out= None, rotation=None,
+                 scaling=  None,
                  channel_random_noise = None, bluring= None,
                  worse_quality= None,
                  mixup= None)
 
     for x,y in generator:
         print(x.shape, y.shape)
+        plot_batch_of_images(x.astype('uint8'))
         a=1+2
 
 

@@ -150,7 +150,7 @@ class ImageDataLoader(Sequence):
     def _zoom_image(self, img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
-        parameter_boundaries = [1, 3]
+        parameter_boundaries = [1, 2]
         old_shape = img.shape[:2]
         randomly_picked_param = np.random.uniform(parameter_boundaries[0], parameter_boundaries[1])
         # firstly zoom image (increase or decrease the size)
@@ -168,7 +168,7 @@ class ImageDataLoader(Sequence):
     def _add_noise_on_one_channel(self, img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
-        parameter_boundaries = [40, 100]
+        parameter_boundaries = [5, 20]
         randomly_picked_param = np.random.uniform(parameter_boundaries[0], parameter_boundaries[1])
         randomly_picked_channel = np.random.randint(0, 3)
         img = channel_random_noise(img, num_channel=randomly_picked_channel, std=randomly_picked_param)
