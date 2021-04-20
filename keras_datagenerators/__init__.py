@@ -5,6 +5,8 @@ TODO: write description of package
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import multiprocessing
+
 from keras_datagenerators.ImageDataLoader import ImageDataLoader
 
 """
@@ -145,18 +147,23 @@ if __name__ == '__main__':
     paths_with_labels['class'] = paths_with_labels['class'].astype('int32')
     generator=ImageDataLoader(paths_with_labels=paths_with_labels, batch_size=batch_size, preprocess_function=None,
                  horizontal_flip = None, vertical_flip = None,
-                 shift= None,
-                 brightness= None, shearing= None, zooming = None,
-                 random_cropping_out= None, rotation=None,
+                 shift= 0.5,
+                 brightness= 0.5, shearing= 0.5, zooming = 0.5,
+                 random_cropping_out= 0.5, rotation=0.5,
                  scaling=  None,
-                 channel_random_noise = None, bluring= None,
-                 worse_quality= None,
-                 mixup= None)
-
+                 channel_random_noise = 0.5, bluring= 0.5,
+                 worse_quality= 0.5,
+                 mixup= None,
+                 pool_workers=4)
+    start=time.time()
+    counter=1
     for x,y in generator:
+        if counter%10==0:
+            print('time consumed:',time.time()-start)
         print(x.shape, y.shape)
-        plot_batch_of_images(x.astype('uint8'))
+        #plot_batch_of_images(x.astype('uint8'))
         a=1+2
+        counter+=1
 
 
 

@@ -4,6 +4,7 @@
 TODO: write description of module
 """
 import multiprocessing
+from itertools import repeat
 from typing import Optional, Callable, Tuple
 
 from tensorflow.keras.utils import Sequence
@@ -13,6 +14,13 @@ import numpy as np
 from preprocessing.data_preprocessing.image_preprocessing_utils import shear_image, rotate_image, flip_image, \
     shift_image, change_brightness, zoom_image, crop_image, channel_random_noise, blur_image, \
     get_image_with_worse_quality, load_image
+
+
+def func_1(path:str):
+    for i in range(100):
+        path.split('\\')
+    return path, np.zeros((100,100))
+
 
 
 class ImageDataLoader(Sequence):
@@ -34,6 +42,7 @@ class ImageDataLoader(Sequence):
 
     paths_with_labels: pd.DataFrame
     batch_size: int
+    pool:multiprocessing.Pool
 
     def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Optional[Callable]=None,
                  horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
@@ -43,7 +52,8 @@ class ImageDataLoader(Sequence):
                  scaling: Optional[float] = None,
                  channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
                  worse_quality: Optional[float] = None,
-                 mixup: Optional[bool] = None):
+                 mixup: Optional[bool] = None,
+                 pool_workers:int=4):
         # TODO: write description
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
@@ -103,8 +113,60 @@ class ImageDataLoader(Sequence):
                                  'representing the probability of arising such augmentation technique.')
         if mixup is not None and not isinstance(mixup, bool):
             raise AttributeError('Parameter mixup should have bool type.')
+        # create a pool of workers to do multiprocessing during loading and preprocessing
+        self.pool =multiprocessing.Pool(pool_workers)
 
-    def _shear_image(self, img: np.ndarray):
+
+
+    def _load_and_preprocess_batch(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
+        # TODO: write description
+        filenames = self.paths_with_labels['filename'].iloc[
+                    idx * self.batch_size:(idx+1) * self.batch_size].values.flatten()
+        labels = self.paths_with_labels['class'].iloc[
+                 idx * self.batch_size:(idx+1) * self.batch_size].values.flatten()
+        results=[]
+        for filename in filenames:
+            results.append(self.pool.apply_async(ImageAugmentor.load_and_preprocess_one_image, args=(filename,self.horizontal_flip, self.vertical_flip,
+                 self.shift, self.brightness, self.shearing, self.zooming, self.random_cropping_out, self.rotation, self.channel_random_noise, self.bluring,
+                 self.worse_quality)))
+        '''result = self.pool.map(self._load_and_preprocess_one_image, filenames)
+        self.pool.close()
+        self.pool.join()'''
+        result=[]
+        for res in results:
+            result.append(res.get())
+        result = dict(result)
+        # create batch output
+        image_shape = result[filenames[0]].shape
+        result_data = np.zeros((self.batch_size,) + image_shape)
+        result_labels=labels.reshape((-1,1))
+        for idx_filename in range(filenames.shape[0]):
+            filename = filenames[idx_filename]
+            result_data[idx_filename]=result[filename]
+        return (result_data.astype('float32'), result_labels)
+
+
+
+    def on_epoch_end(self):
+        # TODO: write description
+        # just shuffle rows in dataframe
+        self.paths_with_labels = self.paths_with_labels.sample(frac=1)
+
+    def __getitem__(self, index)->Tuple[np.ndarray, np.ndarray]:
+        # TODO: write description
+        data, labels = self._load_and_preprocess_batch(index)
+        return (data, labels)
+
+    def __len__(self) -> int:
+        # TODO: write description
+        num_steps = int(np.ceil(self.paths_with_labels.shape[0] / self.batch_size))
+        return num_steps
+
+
+class ImageAugmentor():
+
+    @staticmethod
+    def _shear_image(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         parameter_boundaries = [-0.5, 0.5]
@@ -112,7 +174,8 @@ class ImageDataLoader(Sequence):
         img = shear_image(img, shear_factor=randomly_picked_param)
         return img
 
-    def _rotate_image(self, img: np.ndarray):
+    @staticmethod
+    def _rotate_image(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         parameter_boundaries = [-90, 90]
@@ -120,17 +183,20 @@ class ImageDataLoader(Sequence):
         img = rotate_image(img, rotation_angle=randomly_picked_param)
         return img
 
-    def _flip_image_vertical(self, img: np.ndarray):
+    @staticmethod
+    def _flip_image_vertical(img: np.ndarray):
         # TODO: write description
         img = flip_image(img, flip_type='vertical')
         return img
 
-    def _flip_image_horizontal(self, img: np.ndarray):
+    @staticmethod
+    def _flip_image_horizontal(img: np.ndarray):
         # TODO: write description
         img = flip_image(img, flip_type='horizontal')
         return img
 
-    def _shift_image(self, img: np.ndarray):
+    @staticmethod
+    def _shift_image(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         parameter_boundaries = [-50, 50]
@@ -139,7 +205,8 @@ class ImageDataLoader(Sequence):
         img = shift_image(img, shift_vector=(randomly_picked_param_horizontal, randomly_picked_param_vertical))
         return img
 
-    def _change_brightness_image(self, img: np.ndarray):
+    @staticmethod
+    def _change_brightness_image(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         parameter_boundaries = [-0.5, 0.5]
@@ -147,10 +214,11 @@ class ImageDataLoader(Sequence):
         img = change_brightness(img, brightness_factor=randomly_picked_param)
         return img
 
-    def _zoom_image(self, img: np.ndarray):
+    @staticmethod
+    def _zoom_image(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
-        parameter_boundaries = [1, 2]
+        parameter_boundaries = [1.1, 1.5]
         old_shape = img.shape[:2]
         randomly_picked_param = np.random.uniform(parameter_boundaries[0], parameter_boundaries[1])
         # firstly zoom image (increase or decrease the size)
@@ -165,7 +233,8 @@ class ImageDataLoader(Sequence):
         img = crop_image(img, bbox=(x0, y0, x1, y1))
         return img
 
-    def _add_noise_on_one_channel(self, img: np.ndarray):
+    @staticmethod
+    def _add_noise_on_one_channel(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         parameter_boundaries = [5, 20]
@@ -174,7 +243,8 @@ class ImageDataLoader(Sequence):
         img = channel_random_noise(img, num_channel=randomly_picked_channel, std=randomly_picked_param)
         return img
 
-    def _random_cutting_out(self, img: np.ndarray):
+    @staticmethod
+    def _random_cutting_out(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         # choose which proportion of image should we cut out
@@ -193,7 +263,8 @@ class ImageDataLoader(Sequence):
         img[y0:y1, x0:x1] = 0
         return img
 
-    def _blur_image(self, img: np.ndarray):
+    @staticmethod
+    def _blur_image(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         parameter_boundaries = [1, 3]
@@ -201,7 +272,8 @@ class ImageDataLoader(Sequence):
         img = blur_image(img, sigma=randomly_picked_param)
         return img
 
-    def _worse_quality(self, img: np.ndarray):
+    @staticmethod
+    def _worse_quality(img: np.ndarray):
         # TODO: write description
         # this is empirically chosen parameter boundaries
         parameter_boundaries = [0.2, 0.8]
@@ -209,97 +281,72 @@ class ImageDataLoader(Sequence):
         img = get_image_with_worse_quality(img, rescaling_factor=randomly_picked_param)
         return img
 
-    def _load_and_preprocess_batch(self, idx: int,
-                                   workers: int = multiprocessing.cpu_count()
-                                   ) -> Tuple[np.ndarray, np.ndarray]:
-        filenames = self.paths_with_labels['filename'].iloc[
-                    idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
-        labels = self.paths_with_labels['class'].iloc[
-                 idx * self.batch_size:idx * (self.batch_size + 1)].values.flatten()
-        with multiprocessing.Pool(processes=workers) as pool:
-            result = pool.starmap(self._load_and_preprocess_batch, filenames)
-            pool.close()
-            pool.join()
-        result = dict(result)
-        # create batch output
-        image_shape = result[filenames[0]].shape
-        result_data = np.zeros((self.batch_size,) + image_shape)
-        result_labels=labels.reshape((-1,1))
-        for idx_filename in range(filenames.shape[0]):
-            filename = filenames[idx_filename]
-            result_data[idx_filename]=result[filename]
-        return (result_data.astype('float32'), result_labels)
+    @staticmethod
+    def load_and_preprocess_one_image(path:str, horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
+                 shift: Optional[float] = None,
+                 brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
+                 random_cropping_out: Optional[float] = None, rotation: Optional[float] = None,
+                 channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
+                 worse_quality: Optional[float] = None):
+        img=ImageAugmentor._load_image(path)
+        img=ImageAugmentor._augment_one_image(img, horizontal_flip, vertical_flip,
+                 shift, brightness, shearing, zooming, random_cropping_out, rotation, channel_random_noise, bluring,
+                 worse_quality)
+        return path, img
 
-    def _load_and_preprocess_batch_ONE_WORKER(self, idx:int)-> Tuple[np.ndarray, np.ndarray]:
-        filenames = self.paths_with_labels['filename'].iloc[
-                    idx * self.batch_size:(idx+1) * self.batch_size].values.flatten()
-        labels = self.paths_with_labels['class'].iloc[
-                 idx * self.batch_size:(idx+1) * self.batch_size ].values.flatten()
-        result=[]
-        for filename in filenames:
-            result.append(self._load_and_preprocess_one_image(filename))
-        result = dict(result)
-        # create batch output
-        image_shape = result[filenames[0]].shape
-        result_data = np.zeros((filenames.shape[0],) + image_shape)
-        result_labels = labels.reshape((-1, 1))
-        for idx_filename in range(filenames.shape[0]):
-            filename = filenames[idx_filename]
-            result_data[idx_filename] = result[filename]
-        return (result_data.astype('float32'), result_labels)
 
-    def _load_and_preprocess_one_image(self, path: str) -> Tuple[np.ndarray, str]:
-        # TODO: write description
-        img = self._load_image(path)
-        img = self._augment_one_image(img)
-        if not self.scaling is None:
-            img = img * self.scaling
-        return (path, img)
-
-    def _load_image(self, path):
+    @staticmethod
+    def _load_image(path):
         # TODO: write description
         img = load_image(path)
         return img
 
-    def _augment_one_image(self, img: np.ndarray):
+    @staticmethod
+    def _augment_one_image(img: np.ndarray, horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
+                 shift: Optional[float] = None,
+                 brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
+                 random_cropping_out: Optional[float] = None, rotation: Optional[float] = None,
+                 channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
+                 worse_quality: Optional[float] = None):
         # TODO: write description
         # horizontal flipping
-        if not self.horizontal_flip is None and self._get_answer_with_prob(self.horizontal_flip):
-            img = self._flip_image_horizontal(img)
+        if not horizontal_flip is None and ImageAugmentor._get_answer_with_prob(horizontal_flip):
+            img = ImageAugmentor._flip_image_horizontal(img)
         # vertical flipping
-        if not self.vertical_flip is None and self._get_answer_with_prob(self.vertical_flip):
-            img = self._flip_image_vertical(img)
+        if not vertical_flip is None and ImageAugmentor._get_answer_with_prob(vertical_flip):
+            img = ImageAugmentor._flip_image_vertical(img)
         # shifting
-        if not self.shift is None and self._get_answer_with_prob(self.shift):
-            img = self._shift_image(img)
+        if not shift is None and ImageAugmentor._get_answer_with_prob(shift):
+            img = ImageAugmentor._shift_image(img)
         # brightness changing
-        if not self.brightness is None and self._get_answer_with_prob(self.brightness):
-            img = self._change_brightness_image(img)
+        if not brightness is None and ImageAugmentor._get_answer_with_prob(brightness):
+            img = ImageAugmentor._change_brightness_image(img)
         # shearing
-        if not self.shearing is None and self._get_answer_with_prob(self.shearing):
-            img = self._shear_image(img)
+        if not shearing is None and ImageAugmentor._get_answer_with_prob(shearing):
+            img = ImageAugmentor._shear_image(img)
         # zooming
-        if not self.zooming is None and self._get_answer_with_prob(self.zooming):
-            img = self._zoom_image(img)
+        if not zooming is None and ImageAugmentor._get_answer_with_prob(zooming):
+            img = ImageAugmentor._zoom_image(img)
         # channel random noise
-        if not self.channel_random_noise is None and self._get_answer_with_prob(self.channel_random_noise):
-            img = self._add_noise_on_one_channel(img)
+        if not channel_random_noise is None and ImageAugmentor._get_answer_with_prob(channel_random_noise):
+            img = ImageAugmentor._add_noise_on_one_channel(img)
         # rotation
-        if not self.rotation is None and self._get_answer_with_prob(self.rotation):
-            img = self._rotate_image(img)
+        if not rotation is None and ImageAugmentor._get_answer_with_prob(rotation):
+            img = ImageAugmentor._rotate_image(img)
         # random cropping out
-        if not self.random_cropping_out is None and self._get_answer_with_prob(self.random_cropping_out):
-            img = self._random_cutting_out(img)
+        if not random_cropping_out is None and ImageAugmentor._get_answer_with_prob(random_cropping_out):
+            img = ImageAugmentor._random_cutting_out(img)
         # bluring
-        if not self.bluring is None and self._get_answer_with_prob(self.bluring):
-            img = self._blur_image(img)
+        if not bluring is None and ImageAugmentor._get_answer_with_prob(bluring):
+            img = ImageAugmentor._blur_image(img)
         # worse quality
-        if not self.worse_quality is None and self._get_answer_with_prob(self.worse_quality):
-            img = self._worse_quality(img)
+        if not worse_quality is None and ImageAugmentor._get_answer_with_prob(worse_quality):
+            img = ImageAugmentor._worse_quality(img)
         # return augmented image
         return img
 
-    def _get_answer_with_prob(self, prob: float):
+    @staticmethod
+    def _get_answer_with_prob(prob: float):
         # TODO: write description
         if prob < 0 or prob > 1:
             raise AttributeError('Probability should be a float number between 0 and 1. Gor %s.' % prob)
@@ -308,18 +355,3 @@ class ImageDataLoader(Sequence):
         if rolled_prob < prob:
             return True
         return False
-
-    def on_epoch_end(self):
-        # TODO: write description
-        # just shuffle rows in dataframe
-        self.paths_with_labels = self.paths_with_labels.sample(frac=1)
-
-    def __getitem__(self, index)->Tuple[np.ndarray, np.ndarray]:
-        # TODO: write description
-        data, labels = self._load_and_preprocess_batch_ONE_WORKER(index)
-        return (data, labels)
-
-    def __len__(self) -> int:
-        # TODO: write description
-        num_steps = int(np.ceil(self.paths_with_labels.shape[0] / self.batch_size))
-        return num_steps
