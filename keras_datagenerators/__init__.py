@@ -154,11 +154,11 @@ if __name__ == '__main__':
                  channel_random_noise = 0.5, bluring= 0.5,
                  worse_quality= 0.5,
                  mixup= None,
-                 pool_workers=4)
+                 pool_workers=1)
     start=time.time()
     counter=1
     for x,y in generator:
-        if counter%10==0:
+        if counter%30==0:
             print('time consumed:',time.time()-start)
         print(x.shape, y.shape)
         #plot_batch_of_images(x.astype('uint8'))
