@@ -143,7 +143,7 @@ class ImageDataLoader(Sequence):
         result = dict(result)
         # create batch output
         image_shape = result[filenames[0]].shape
-        result_data = np.zeros((self.batch_size,) + image_shape)
+        result_data = np.zeros((labels.shape[0],) + image_shape)
         result_labels=labels.reshape((-1,1))
         for idx_filename in range(filenames.shape[0]):
             filename = filenames[idx_filename]
