@@ -45,6 +45,7 @@ class ImageDataLoader(Sequence):
     pool:multiprocessing.Pool
 
     def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Optional[Callable]=None,
+                 num_classes:Optional[int]=None,
                  horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
                  shift: Optional[float] = None,
                  brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
@@ -115,6 +116,10 @@ class ImageDataLoader(Sequence):
             raise AttributeError('Parameter mixup should have bool type.')
         # create a pool of workers to do multiprocessing during loading and preprocessing
         self.pool =multiprocessing.Pool(pool_workers)
+        if num_classes is None:
+            self.num_classes=paths_with_labels['class'].unique().shape[0]
+        else:
+            self.num_classes=num_classes
 
 
 
@@ -155,6 +160,7 @@ class ImageDataLoader(Sequence):
     def __getitem__(self, index)->Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
         data, labels = self._load_and_preprocess_batch(index)
+        labels = np.eye(self.num_classes)[labels.reshape((-1,)).astype('int32')]
         if self.preprocess_function is not None:
             data=self.preprocess_function(data)
         return (data, labels)
