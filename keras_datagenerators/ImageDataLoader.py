@@ -155,6 +155,8 @@ class ImageDataLoader(Sequence):
     def __getitem__(self, index)->Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
         data, labels = self._load_and_preprocess_batch(index)
+        if self.preprocess_function is not None:
+            data=self.preprocess_function(data)
         return (data, labels)
 
     def __len__(self) -> int:
