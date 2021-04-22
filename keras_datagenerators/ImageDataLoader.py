@@ -132,6 +132,8 @@ class ImageDataLoader(Sequence):
         else:
             # assign every factor to 1
             self.prob_factors_for_each_class = tuple(1. for _ in range(self.num_classes))
+        # shuffle before start
+        self.on_epoch_end()
 
     def _load_and_preprocess_batch(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
@@ -195,14 +197,21 @@ class ImageDataLoader(Sequence):
         left_side_labels = labels[indexes_to_choose[:middle_idx]]
         right_side_images = images[indexes_to_choose[middle_idx:]]
         right_side_labels = labels[indexes_to_choose[:middle_idx]]
-        new_images = left_side_images * beta_values.reshape((-1,1,1,1)) + right_side_images *np.ones(right_side_images.shape)* (1 - beta_values.reshape((-1,1,1,1)))
-        new_labels = left_side_labels * beta_values.reshape((-1,1,1,1)) + right_side_labels * (1 - beta_values.reshape((-1,1,1,1)))
+        # generate new images and labels with betta and (1-betta) coefficients
+        new_images_1 = left_side_images * beta_values.reshape((-1,1,1,1)) + right_side_images * (1 - beta_values.reshape((-1,1,1,1)))
+        new_images_2 = left_side_images * (1.-beta_values.reshape((-1, 1, 1, 1))) + right_side_images * beta_values.reshape((-1, 1, 1, 1))
+        new_labels_1 = left_side_labels * beta_values.reshape((-1,1)) + right_side_labels * (1 - beta_values.reshape((-1,1)))
+        new_labels_2 = left_side_labels * (1.-beta_values.reshape((-1, 1))) + right_side_labels *beta_values.reshape((-1, 1))
         # assign generated images back to primary array
-        idx_new_images = 0
-        for idx_primary_images in indexes_to_choose:
-            images[idx_primary_images] = new_images[idx_new_images]
-            labels[idx_primary_images] = new_labels[idx_new_images]
-            idx_new_images += 1
+        idx_generated_arrays=0
+        for idx_indexes_to_choose in range(0,indexes_to_choose.shape[0],2):
+            image_idx_1=indexes_to_choose[idx_indexes_to_choose]
+            image_idx_2=indexes_to_choose[idx_indexes_to_choose+1]
+            images[image_idx_1]=new_images_1[idx_generated_arrays]
+            images[image_idx_2]=new_images_2[idx_generated_arrays]
+            labels[image_idx_1]=new_labels_1[idx_generated_arrays]
+            labels[image_idx_2]=new_labels_2[idx_generated_arrays]
+            idx_generated_arrays+=1
         return images, labels
 
     def on_epoch_end(self):
