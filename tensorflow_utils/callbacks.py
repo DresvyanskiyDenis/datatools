@@ -48,7 +48,7 @@ class best_weights_setter_callback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         # TODO: write description
         current_recall = self.custom_recall_validation_with_generator(self.val_generator, self.model)
-        print('current validation recall:', current_recall)
+        print('current validation %s:'%self.evaluation_metric, current_recall)
         if np.greater(current_recall, self.best):
             self.best = current_recall
             self.best_weights = self.model.get_weights()
