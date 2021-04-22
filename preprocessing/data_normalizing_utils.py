@@ -21,6 +21,8 @@ __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 
+vgg_face2_mean = (91.4953, 103.8827, 131.0912)
+
 def get_trained_minmax_scaler(data:np.ndarray, feature_range:Tuple[float, float]=(-1,1)) -> object:
     """Trains and returns MinMaxScaler from sklearn library.
 
@@ -155,6 +157,10 @@ def power_normalization(data:np.ndarray, return_scaler:bool=False,
 def image_scaling_to_unit_range(img:np.ndarray)->np.ndarray:
     # TODO: write description
     return img/255.
+
+def VGGFace2_normalization(img:np.ndarray)->np.ndarray:
+    img = img[:, :, ::-1] - vgg_face2_mean
+    return img
 
 
 if __name__=="__main__":
