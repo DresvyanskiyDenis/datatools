@@ -37,9 +37,10 @@ class ImageDataLoader(Sequence):
     scaling: float
     channel_random_noise: float
     worse_quality: float
-    mixup: bool
+    mixup: float
     preprocess_function: Callable
 
+    prob_factors_for_each_class:Optional[Tuple[float,...]]
     paths_with_labels: pd.DataFrame
     batch_size: int
     pool:multiprocessing.Pool
@@ -53,7 +54,8 @@ class ImageDataLoader(Sequence):
                  scaling: Optional[float] = None,
                  channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
                  worse_quality: Optional[float] = None,
-                 mixup: Optional[bool] = None,
+                 mixup: Optional[float] = None,
+                 prob_factors_for_each_class:Optional[Tuple[float,...]]=None,
                  pool_workers:int=4):
         # TODO: write description
         self.horizontal_flip = horizontal_flip
@@ -69,6 +71,7 @@ class ImageDataLoader(Sequence):
         self.bluring = bluring
         self.worse_quality = worse_quality
         self.mixup = mixup
+        self.prob_factors_for_each_class = prob_factors_for_each_class
         self.paths_with_labels = paths_with_labels
         self.batch_size = batch_size
         self.preprocess_function = preprocess_function
@@ -112,14 +115,24 @@ class ImageDataLoader(Sequence):
         if worse_quality is not None and (worse_quality < 0 or worse_quality > 1):
             raise AttributeError('Parameter worse_quality should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if mixup is not None and not isinstance(mixup, bool):
-            raise AttributeError('Parameter mixup should have bool type.')
+        if mixup is not None and (mixup < 0 or mixup > 1):
+            raise AttributeError('Parameter mixup should be float number between 0 and 1, '
+                                 'representing the portion of images to be mixup applied.')
         # create a pool of workers to do multiprocessing during loading and preprocessing
         self.pool =multiprocessing.Pool(pool_workers)
+        # calculate the number of classes
         if num_classes is None:
             self.num_classes=paths_with_labels['class'].unique().shape[0]
         else:
             self.num_classes=num_classes
+        # check if provided len of prob_factors_for_each_class is the same as num_classes
+        if prob_factors_for_each_class is not None:
+            if len(prob_factors_for_each_class)!=self.num_classes:
+                raise AttributeError('prob_factors_for_each_class should have num_classes elements. Got %i.'%len(prob_factors_for_each_class))
+        else:
+            # assign every factor to 1
+            self.prob_factors_for_each_class=tuple(1. for _ in range(self.num_classes))
+
 
 
 
@@ -130,10 +143,20 @@ class ImageDataLoader(Sequence):
         labels = self.paths_with_labels['class'].iloc[
                  idx * self.batch_size:(idx+1) * self.batch_size].values.flatten()
         results=[]
-        for filename in filenames:
-            results.append(self.pool.apply_async(ImageAugmentor.load_and_preprocess_one_image, args=(filename,self.horizontal_flip, self.vertical_flip,
-                 self.shift, self.brightness, self.shearing, self.zooming, self.random_cropping_out, self.rotation, self.channel_random_noise, self.bluring,
-                 self.worse_quality)))
+        for filename_idx in range(filenames.shape[0]):
+            results.append(self.pool.apply_async(ImageAugmentor.load_and_preprocess_one_image,
+                                                 args=(filenames[filename_idx],
+                                                       self.horizontal_flip*self.prob_factors_for_each_class[filename_idx],
+                                                       self.vertical_flip*self.prob_factors_for_each_class[filename_idx],
+                                                       self.shift*self.prob_factors_for_each_class[filename_idx],
+                                                       self.brightness*self.prob_factors_for_each_class[filename_idx],
+                                                       self.shearing*self.prob_factors_for_each_class[filename_idx],
+                                                       self.zooming*self.prob_factors_for_each_class[filename_idx],
+                                                       self.random_cropping_out*self.prob_factors_for_each_class[filename_idx],
+                                                       self.rotation*self.prob_factors_for_each_class[filename_idx],
+                                                       self.channel_random_noise*self.prob_factors_for_each_class[filename_idx],
+                                                       self.bluring*self.prob_factors_for_each_class[filename_idx],
+                                                       self.worse_quality*self.prob_factors_for_each_class[filename_idx])))
         '''result = self.pool.map(self._load_and_preprocess_one_image, filenames)
         self.pool.close()
         self.pool.join()'''
@@ -148,7 +171,36 @@ class ImageDataLoader(Sequence):
         for idx_filename in range(filenames.shape[0]):
             filename = filenames[idx_filename]
             result_data[idx_filename]=result[filename]
+        # one-hot-label encoding
+        result_labels = np.eye(self.num_classes)[result_labels.reshape((-1,)).astype('int32')]
+        # mixup
+        if self.mixup is not None:
+            result_data, result_labels = self._mixup(result_data, result_labels)
+
         return (result_data.astype('float32'), result_labels)
+
+    def _mixup(self, images:np.ndarray, labels:np.ndarray, alfa:float=0.2):
+        # TODO: write description
+        portion=int(np.ceil(self.mixup*images.shape[0]))
+        if portion%2==1: portion+=1
+        if portion==0: return images, labels
+        indexes_to_choose=np.random.choice(images.shape[0],portion)
+        beta_values=np.random.beta(alfa, alfa, portion//2)
+        # vectorized implementation
+        middle_idx=indexes_to_choose.shape[0]//2
+        left_side_images=images[indexes_to_choose[:middle_idx]]
+        left_side_labels=labels[indexes_to_choose[:middle_idx]]
+        right_side_images=images[indexes_to_choose[middle_idx:]]
+        right_side_labels=labels[indexes_to_choose[:middle_idx]]
+        new_images=left_side_images*beta_values+right_side_images*(1-beta_values)
+        new_labels=left_side_labels*beta_values+right_side_labels*(1-beta_values)
+        # assign generated images back to primary array
+        idx_new_images=0
+        for idx_primary_images in indexes_to_choose:
+            images[idx_primary_images]=new_images[idx_new_images]
+            labels[idx_primary_images]=new_labels[idx_new_images]
+            idx_new_images+=1
+        return images, labels
 
 
 
@@ -160,7 +212,6 @@ class ImageDataLoader(Sequence):
     def __getitem__(self, index)->Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
         data, labels = self._load_and_preprocess_batch(index)
-        labels = np.eye(self.num_classes)[labels.reshape((-1,)).astype('int32')]
         if self.preprocess_function is not None:
             data=self.preprocess_function(data)
         return (data, labels)
