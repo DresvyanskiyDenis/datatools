@@ -16,11 +16,10 @@ from preprocessing.data_preprocessing.image_preprocessing_utils import shear_ima
     get_image_with_worse_quality, load_image
 
 
-def func_1(path:str):
+def func_1(path: str):
     for i in range(100):
         path.split('\\')
-    return path, np.zeros((100,100))
-
+    return path, np.zeros((100, 100))
 
 
 class ImageDataLoader(Sequence):
@@ -40,13 +39,13 @@ class ImageDataLoader(Sequence):
     mixup: float
     preprocess_function: Callable
 
-    prob_factors_for_each_class:Optional[Tuple[float,...]]
+    prob_factors_for_each_class: Optional[Tuple[float, ...]]
     paths_with_labels: pd.DataFrame
     batch_size: int
-    pool:multiprocessing.Pool
+    pool: multiprocessing.Pool
 
-    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Optional[Callable]=None,
-                 num_classes:Optional[int]=None,
+    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Optional[Callable] = None,
+                 num_classes: Optional[int] = None,
                  horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
                  shift: Optional[float] = None,
                  brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
@@ -55,8 +54,8 @@ class ImageDataLoader(Sequence):
                  channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
                  worse_quality: Optional[float] = None,
                  mixup: Optional[float] = None,
-                 prob_factors_for_each_class:Optional[Tuple[float,...]]=None,
-                 pool_workers:int=4):
+                 prob_factors_for_each_class: Optional[Tuple[float, ...]] = None,
+                 pool_workers: int = 4):
         # TODO: write description
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
@@ -85,7 +84,7 @@ class ImageDataLoader(Sequence):
         if horizontal_flip is not None and (horizontal_flip < 0 or horizontal_flip > 1):
             raise AttributeError('Parameter horizontal_flip should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if vertical_flip is not None and ( vertical_flip < 0 or vertical_flip > 1):
+        if vertical_flip is not None and (vertical_flip < 0 or vertical_flip > 1):
             raise AttributeError('Parameter vertical_flip should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
         if shift is not None and (shift < 0 or shift > 1):
@@ -100,7 +99,7 @@ class ImageDataLoader(Sequence):
         if zooming is not None and (zooming < 0 or zooming > 1):
             raise AttributeError('Parameter zooming should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
-        if random_cropping_out is not None and  (random_cropping_out < 0 or random_cropping_out > 1):
+        if random_cropping_out is not None and (random_cropping_out < 0 or random_cropping_out > 1):
             raise AttributeError('Parameter random_cropping_out should be float number between 0 and 1, '
                                  'representing the probability of arising such augmentation technique.')
         if rotation is not None and (rotation < 0 or rotation > 1):
@@ -119,58 +118,62 @@ class ImageDataLoader(Sequence):
             raise AttributeError('Parameter mixup should be float number between 0 and 1, '
                                  'representing the portion of images to be mixup applied.')
         # create a pool of workers to do multiprocessing during loading and preprocessing
-        self.pool =multiprocessing.Pool(pool_workers)
+        self.pool = multiprocessing.Pool(pool_workers)
         # calculate the number of classes
         if num_classes is None:
-            self.num_classes=paths_with_labels['class'].unique().shape[0]
+            self.num_classes = paths_with_labels['class'].unique().shape[0]
         else:
-            self.num_classes=num_classes
+            self.num_classes = num_classes
         # check if provided len of prob_factors_for_each_class is the same as num_classes
         if prob_factors_for_each_class is not None:
-            if len(prob_factors_for_each_class)!=self.num_classes:
-                raise AttributeError('prob_factors_for_each_class should have num_classes elements. Got %i.'%len(prob_factors_for_each_class))
+            if len(prob_factors_for_each_class) != self.num_classes:
+                raise AttributeError('prob_factors_for_each_class should have num_classes elements. Got %i.' % len(
+                    prob_factors_for_each_class))
         else:
             # assign every factor to 1
-            self.prob_factors_for_each_class=tuple(1. for _ in range(self.num_classes))
-
-
-
+            self.prob_factors_for_each_class = tuple(1. for _ in range(self.num_classes))
 
     def _load_and_preprocess_batch(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
         filenames = self.paths_with_labels['filename'].iloc[
-                    idx * self.batch_size:(idx+1) * self.batch_size].values.flatten()
+                    idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
         labels = self.paths_with_labels['class'].iloc[
-                 idx * self.batch_size:(idx+1) * self.batch_size].values.flatten()
-        results=[]
+                 idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
+        results = []
         for filename_idx in range(filenames.shape[0]):
+            label=int(labels[filename_idx])
             results.append(self.pool.apply_async(ImageAugmentor.load_and_preprocess_one_image,
                                                  args=(filenames[filename_idx],
-                                                       self.horizontal_flip*self.prob_factors_for_each_class[filename_idx],
-                                                       self.vertical_flip*self.prob_factors_for_each_class[filename_idx],
-                                                       self.shift*self.prob_factors_for_each_class[filename_idx],
-                                                       self.brightness*self.prob_factors_for_each_class[filename_idx],
-                                                       self.shearing*self.prob_factors_for_each_class[filename_idx],
-                                                       self.zooming*self.prob_factors_for_each_class[filename_idx],
-                                                       self.random_cropping_out*self.prob_factors_for_each_class[filename_idx],
-                                                       self.rotation*self.prob_factors_for_each_class[filename_idx],
-                                                       self.channel_random_noise*self.prob_factors_for_each_class[filename_idx],
-                                                       self.bluring*self.prob_factors_for_each_class[filename_idx],
-                                                       self.worse_quality*self.prob_factors_for_each_class[filename_idx])))
+                                                       self.horizontal_flip * self.prob_factors_for_each_class[
+                                                           label],
+                                                       self.vertical_flip * self.prob_factors_for_each_class[
+                                                           label],
+                                                       self.shift * self.prob_factors_for_each_class[label],
+                                                       self.brightness * self.prob_factors_for_each_class[label],
+                                                       self.shearing * self.prob_factors_for_each_class[label],
+                                                       self.zooming * self.prob_factors_for_each_class[label],
+                                                       self.random_cropping_out * self.prob_factors_for_each_class[
+                                                           label],
+                                                       self.rotation * self.prob_factors_for_each_class[label],
+                                                       self.channel_random_noise * self.prob_factors_for_each_class[
+                                                           label],
+                                                       self.bluring * self.prob_factors_for_each_class[label],
+                                                       self.worse_quality * self.prob_factors_for_each_class[
+                                                           label])))
         '''result = self.pool.map(self._load_and_preprocess_one_image, filenames)
         self.pool.close()
         self.pool.join()'''
-        result=[]
+        result = []
         for res in results:
             result.append(res.get())
         result = dict(result)
         # create batch output
         image_shape = result[filenames[0]].shape
         result_data = np.zeros((labels.shape[0],) + image_shape)
-        result_labels=labels.reshape((-1,1))
+        result_labels = labels.reshape((-1, 1))
         for idx_filename in range(filenames.shape[0]):
             filename = filenames[idx_filename]
-            result_data[idx_filename]=result[filename]
+            result_data[idx_filename] = result[filename]
         # one-hot-label encoding
         result_labels = np.eye(self.num_classes)[result_labels.reshape((-1,)).astype('int32')]
         # mixup
@@ -179,41 +182,39 @@ class ImageDataLoader(Sequence):
 
         return (result_data.astype('float32'), result_labels)
 
-    def _mixup(self, images:np.ndarray, labels:np.ndarray, alfa:float=0.2):
+    def _mixup(self, images: np.ndarray, labels: np.ndarray, alfa: float = 0.2):
         # TODO: write description
-        portion=int(np.ceil(self.mixup*images.shape[0]))
-        if portion%2==1: portion+=1
-        if portion==0: return images, labels
-        indexes_to_choose=np.random.choice(images.shape[0],portion)
-        beta_values=np.random.beta(alfa, alfa, portion//2)
+        portion = int(np.ceil(self.mixup * images.shape[0]))
+        if portion % 2 == 1: portion += 1
+        if portion == 0: return images, labels
+        indexes_to_choose = np.random.choice(images.shape[0], portion)
+        beta_values = np.random.beta(alfa, alfa, portion // 2)
         # vectorized implementation
-        middle_idx=indexes_to_choose.shape[0]//2
-        left_side_images=images[indexes_to_choose[:middle_idx]]
-        left_side_labels=labels[indexes_to_choose[:middle_idx]]
-        right_side_images=images[indexes_to_choose[middle_idx:]]
-        right_side_labels=labels[indexes_to_choose[:middle_idx]]
-        new_images=left_side_images*beta_values+right_side_images*(1-beta_values)
-        new_labels=left_side_labels*beta_values+right_side_labels*(1-beta_values)
+        middle_idx = indexes_to_choose.shape[0] // 2
+        left_side_images = images[indexes_to_choose[:middle_idx]]
+        left_side_labels = labels[indexes_to_choose[:middle_idx]]
+        right_side_images = images[indexes_to_choose[middle_idx:]]
+        right_side_labels = labels[indexes_to_choose[:middle_idx]]
+        new_images = left_side_images * beta_values.reshape((-1,1,1,1)) + right_side_images *np.ones(right_side_images.shape)* (1 - beta_values.reshape((-1,1,1,1)))
+        new_labels = left_side_labels * beta_values.reshape((-1,1,1,1)) + right_side_labels * (1 - beta_values.reshape((-1,1,1,1)))
         # assign generated images back to primary array
-        idx_new_images=0
+        idx_new_images = 0
         for idx_primary_images in indexes_to_choose:
-            images[idx_primary_images]=new_images[idx_new_images]
-            labels[idx_primary_images]=new_labels[idx_new_images]
-            idx_new_images+=1
+            images[idx_primary_images] = new_images[idx_new_images]
+            labels[idx_primary_images] = new_labels[idx_new_images]
+            idx_new_images += 1
         return images, labels
-
-
 
     def on_epoch_end(self):
         # TODO: write description
         # just shuffle rows in dataframe
         self.paths_with_labels = self.paths_with_labels.sample(frac=1)
 
-    def __getitem__(self, index)->Tuple[np.ndarray, np.ndarray]:
+    def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
         data, labels = self._load_and_preprocess_batch(index)
         if self.preprocess_function is not None:
-            data=self.preprocess_function(data)
+            data = self.preprocess_function(data)
         return (data, labels)
 
     def __len__(self) -> int:
@@ -341,18 +342,20 @@ class ImageAugmentor():
         return img
 
     @staticmethod
-    def load_and_preprocess_one_image(path:str, horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
-                 shift: Optional[float] = None,
-                 brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
-                 random_cropping_out: Optional[float] = None, rotation: Optional[float] = None,
-                 channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
-                 worse_quality: Optional[float] = None):
-        img=ImageAugmentor._load_image(path)
-        img=ImageAugmentor._augment_one_image(img, horizontal_flip, vertical_flip,
-                 shift, brightness, shearing, zooming, random_cropping_out, rotation, channel_random_noise, bluring,
-                 worse_quality)
+    def load_and_preprocess_one_image(path: str, horizontal_flip: Optional[float] = None,
+                                      vertical_flip: Optional[float] = None,
+                                      shift: Optional[float] = None,
+                                      brightness: Optional[float] = None, shearing: Optional[float] = None,
+                                      zooming: Optional[float] = None,
+                                      random_cropping_out: Optional[float] = None, rotation: Optional[float] = None,
+                                      channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
+                                      worse_quality: Optional[float] = None):
+        img = ImageAugmentor._load_image(path)
+        img = ImageAugmentor._augment_one_image(img, horizontal_flip, vertical_flip,
+                                                shift, brightness, shearing, zooming, random_cropping_out, rotation,
+                                                channel_random_noise, bluring,
+                                                worse_quality)
         return path, img
-
 
     @staticmethod
     def _load_image(path):
@@ -361,12 +364,14 @@ class ImageAugmentor():
         return img
 
     @staticmethod
-    def _augment_one_image(img: np.ndarray, horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
-                 shift: Optional[float] = None,
-                 brightness: Optional[float] = None, shearing: Optional[float] = None, zooming: Optional[float] = None,
-                 random_cropping_out: Optional[float] = None, rotation: Optional[float] = None,
-                 channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
-                 worse_quality: Optional[float] = None):
+    def _augment_one_image(img: np.ndarray, horizontal_flip: Optional[float] = None,
+                           vertical_flip: Optional[float] = None,
+                           shift: Optional[float] = None,
+                           brightness: Optional[float] = None, shearing: Optional[float] = None,
+                           zooming: Optional[float] = None,
+                           random_cropping_out: Optional[float] = None, rotation: Optional[float] = None,
+                           channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
+                           worse_quality: Optional[float] = None):
         # TODO: write description
         # horizontal flipping
         if not horizontal_flip is None and ImageAugmentor._get_answer_with_prob(horizontal_flip):
@@ -406,6 +411,8 @@ class ImageAugmentor():
 
     @staticmethod
     def _get_answer_with_prob(prob: float):
+        if prob==0:
+            return False
         # TODO: write description
         if prob < 0 or prob > 1:
             raise AttributeError('Probability should be a float number between 0 and 1. Gor %s.' % prob)
