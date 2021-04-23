@@ -15,6 +15,7 @@ from preprocessing.data_preprocessing.image_preprocessing_utils import shear_ima
     shift_image, change_brightness, zoom_image, crop_image, channel_random_noise, blur_image, \
     get_image_with_worse_quality, load_image
 
+
 class ImageDataLoader_multilabel(Sequence):
     """TODO:write description"""
     horizontal_flip: float
@@ -34,13 +35,13 @@ class ImageDataLoader_multilabel(Sequence):
 
     prob_factors_for_each_class: Optional[Tuple[float, ...]]
     paths_with_labels: pd.DataFrame
-    class_columns:List[str]
+    class_columns: List[str]
     batch_size: int
-    num_classes:int
-    num_workers:int
+    num_classes: int
+    num_workers: int
     pool: multiprocessing.Pool
 
-    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, class_columns:List[str],
+    def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, class_columns: List[str],
                  preprocess_function: Optional[Callable] = None,
                  num_classes: Optional[int] = None,
                  horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
@@ -70,11 +71,11 @@ class ImageDataLoader_multilabel(Sequence):
         self.prob_factors_for_each_class = prob_factors_for_each_class
 
         self.paths_with_labels = paths_with_labels
-        self.class_columns=class_columns
+        self.class_columns = class_columns
         self.batch_size = batch_size
         self.num_classes = num_classes
         self.preprocess_function = preprocess_function
-        self.num_workers=pool_workers
+        self.num_workers = pool_workers
         # check provided params
         self._check_provided_params()
         # shuffle before start
@@ -86,7 +87,7 @@ class ImageDataLoader_multilabel(Sequence):
         if not self.class_columns in self.paths_with_labels.columns.to_list():
             raise AttributeError('Dataframe does not contain provided class_columns. '
                                  'Dataframe columns:%s, Got %s.'
-                                 %(self.paths_with_labels.columns.to_list(), self.class_columns))
+                                 % (self.paths_with_labels.columns.to_list(), self.class_columns))
         if self.paths_with_labels.shape[0] == 0:
             raise AttributeError('DataFrame is empty.')
         # check if all provided variables are in the allowed range (usually, from 0..1 or bool)
@@ -169,13 +170,14 @@ class ImageDataLoader_multilabel(Sequence):
         # create batch output
         image_shape = result[filenames[0]].shape
         result_data = np.zeros((labels.shape[0],) + image_shape)
-        result_labels = np.zeros(labels.shape+(self.num_classes,))
+        result_labels = np.zeros(labels.shape + (self.num_classes,))
         for idx_filename in range(filenames.shape[0]):
             filename = filenames[idx_filename]
             result_data[idx_filename] = result[filename]
         # one-hot-label encoding
         for label_type_idx in range(len(self.class_columns)):
-            result_labels[:,label_type_idx]=np.eye(self.num_classes)[result_labels[:,label_type_idx].reshape((-1,)).astype('int32')]
+            result_labels[:, label_type_idx] = np.eye(self.num_classes)[
+                result_labels[:, label_type_idx].reshape((-1,)).astype('int32')]
         # mixup
         if self.mixup is not None:
             result_data, result_labels = self._mixup(result_data, result_labels)
@@ -391,7 +393,7 @@ class ImageAugmentor():
 
     @staticmethod
     def _get_answer_with_prob(prob: float):
-        if prob==0:
+        if prob == 0:
             return False
         # TODO: write description
         if prob < 0 or prob > 1:
