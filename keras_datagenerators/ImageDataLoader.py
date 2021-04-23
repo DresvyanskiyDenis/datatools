@@ -83,37 +83,37 @@ class ImageDataLoader(Sequence):
         # check if all provided variables are in the allowed range (usually, from 0..1 or bool)
         if horizontal_flip is not None and (horizontal_flip < 0 or horizontal_flip > 1):
             raise AttributeError('Parameter horizontal_flip should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if vertical_flip is not None and (vertical_flip < 0 or vertical_flip > 1):
             raise AttributeError('Parameter vertical_flip should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if shift is not None and (shift < 0 or shift > 1):
             raise AttributeError('Parameter shift should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if brightness is not None and (brightness < 0 or brightness > 1):
             raise AttributeError('Parameter brightness should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if shearing is not None and (shearing < 0 or shearing > 1):
             raise AttributeError('Parameter shearing should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if zooming is not None and (zooming < 0 or zooming > 1):
             raise AttributeError('Parameter zooming should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if random_cropping_out is not None and (random_cropping_out < 0 or random_cropping_out > 1):
             raise AttributeError('Parameter random_cropping_out should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if rotation is not None and (rotation < 0 or rotation > 1):
             raise AttributeError('Parameter rotation should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if channel_random_noise is not None and (channel_random_noise < 0 or channel_random_noise > 1):
             raise AttributeError('Parameter channel_random_noise should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if bluring is not None and (bluring < 0 or bluring > 1):
             raise AttributeError('Parameter bluring should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if worse_quality is not None and (worse_quality < 0 or worse_quality > 1):
             raise AttributeError('Parameter worse_quality should be float number between 0 and 1, '
-                                 'representing the probability of arising such augmentation technique.')
+                                 'representing the probability of applying such augmentation technique.')
         if mixup is not None and (mixup < 0 or mixup > 1):
             raise AttributeError('Parameter mixup should be float number between 0 and 1, '
                                  'representing the portion of images to be mixup applied.')
@@ -162,9 +162,6 @@ class ImageDataLoader(Sequence):
                                                        self.bluring * self.prob_factors_for_each_class[label],
                                                        self.worse_quality * self.prob_factors_for_each_class[
                                                            label])))
-        '''result = self.pool.map(self._load_and_preprocess_one_image, filenames)
-        self.pool.close()
-        self.pool.join()'''
         result = []
         for res in results:
             result.append(res.get())
