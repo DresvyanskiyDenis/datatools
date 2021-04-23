@@ -15,13 +15,6 @@ from preprocessing.data_preprocessing.image_preprocessing_utils import shear_ima
     shift_image, change_brightness, zoom_image, crop_image, channel_random_noise, blur_image, \
     get_image_with_worse_quality, load_image
 
-
-def func_1(path: str):
-    for i in range(100):
-        path.split('\\')
-    return path, np.zeros((100, 100))
-
-
 class ImageDataLoader(Sequence):
     """TODO:write description"""
     horizontal_flip: float
