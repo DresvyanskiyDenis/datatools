@@ -35,6 +35,8 @@ class ImageDataLoader(Sequence):
     prob_factors_for_each_class: Optional[Tuple[float, ...]]
     paths_with_labels: pd.DataFrame
     batch_size: int
+    num_classes:int
+    num_workers:int
     pool: multiprocessing.Pool
 
     def __init__(self, paths_with_labels: pd.DataFrame, batch_size: int, preprocess_function: Optional[Callable] = None,
@@ -66,67 +68,72 @@ class ImageDataLoader(Sequence):
         self.prob_factors_for_each_class = prob_factors_for_each_class
         self.paths_with_labels = paths_with_labels
         self.batch_size = batch_size
+        self.num_classes = num_classes
         self.preprocess_function = preprocess_function
+        self.num_workers=pool_workers
+        # check provided params
+        self._check_provided_params()
+        # shuffle before start
+        self.on_epoch_end()
+
+    def _check_provided_params(self):
+        # TODO: write description
         # checking the provided DataFrame
-        if paths_with_labels.columns.to_list() != ['filename', 'class']:
+        if self.paths_with_labels.columns.to_list() != ['filename', 'class']:
             raise AttributeError(
-                'DataFrame columns should be \'filename\' and \'class\'. Got %s.' % paths_with_labels.columns)
-        if paths_with_labels.shape[0] == 0:
+                'DataFrame columns should be \'filename\' and \'class\'. Got %s.' % self.paths_with_labels.columns)
+        if self.paths_with_labels.shape[0] == 0:
             raise AttributeError('DataFrame is empty.')
         # check if all provided variables are in the allowed range (usually, from 0..1 or bool)
-        if horizontal_flip is not None and (horizontal_flip < 0 or horizontal_flip > 1):
+        if self.horizontal_flip is not None and (self.horizontal_flip < 0 or self.horizontal_flip > 1):
             raise AttributeError('Parameter horizontal_flip should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if vertical_flip is not None and (vertical_flip < 0 or vertical_flip > 1):
+        if self.vertical_flip is not None and (self.vertical_flip < 0 or self.vertical_flip > 1):
             raise AttributeError('Parameter vertical_flip should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if shift is not None and (shift < 0 or shift > 1):
+        if self.shift is not None and (self.shift < 0 or self.shift > 1):
             raise AttributeError('Parameter shift should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if brightness is not None and (brightness < 0 or brightness > 1):
+        if self.brightness is not None and (self.brightness < 0 or self.brightness > 1):
             raise AttributeError('Parameter brightness should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if shearing is not None and (shearing < 0 or shearing > 1):
+        if self.shearing is not None and (self.shearing < 0 or self.shearing > 1):
             raise AttributeError('Parameter shearing should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if zooming is not None and (zooming < 0 or zooming > 1):
+        if self.zooming is not None and (self.zooming < 0 or self.zooming > 1):
             raise AttributeError('Parameter zooming should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if random_cropping_out is not None and (random_cropping_out < 0 or random_cropping_out > 1):
+        if self.random_cropping_out is not None and (self.random_cropping_out < 0 or self.random_cropping_out > 1):
             raise AttributeError('Parameter random_cropping_out should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if rotation is not None and (rotation < 0 or rotation > 1):
+        if self.rotation is not None and (self.rotation < 0 or self.rotation > 1):
             raise AttributeError('Parameter rotation should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if channel_random_noise is not None and (channel_random_noise < 0 or channel_random_noise > 1):
+        if self.channel_random_noise is not None and (self.channel_random_noise < 0 or self.channel_random_noise > 1):
             raise AttributeError('Parameter channel_random_noise should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if bluring is not None and (bluring < 0 or bluring > 1):
+        if self.bluring is not None and (self.bluring < 0 or self.bluring > 1):
             raise AttributeError('Parameter bluring should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if worse_quality is not None and (worse_quality < 0 or worse_quality > 1):
+        if self.worse_quality is not None and (self.worse_quality < 0 or self.worse_quality > 1):
             raise AttributeError('Parameter worse_quality should be float number between 0 and 1, '
                                  'representing the probability of applying such augmentation technique.')
-        if mixup is not None and (mixup < 0 or mixup > 1):
+        if self.mixup is not None and (self.mixup < 0 or self.mixup > 1):
             raise AttributeError('Parameter mixup should be float number between 0 and 1, '
                                  'representing the portion of images to be mixup applied.')
         # create a pool of workers to do multiprocessing during loading and preprocessing
-        self.pool = multiprocessing.Pool(pool_workers)
-        # calculate the number of classes
-        if num_classes is None:
-            self.num_classes = paths_with_labels['class'].unique().shape[0]
-        else:
-            self.num_classes = num_classes
+        self.pool = multiprocessing.Pool(self.pool_workers)
+        # calculate the number of classes if it is not provided
+        if self.num_classes is None:
+            self.num_classes = self.paths_with_labels['class'].unique().shape[0]
         # check if provided len of prob_factors_for_each_class is the same as num_classes
-        if prob_factors_for_each_class is not None:
-            if len(prob_factors_for_each_class) != self.num_classes:
+        if self.prob_factors_for_each_class is not None:
+            if len(self.prob_factors_for_each_class) != self.num_classes:
                 raise AttributeError('prob_factors_for_each_class should have num_classes elements. Got %i.' % len(
-                    prob_factors_for_each_class))
+                    self.prob_factors_for_each_class))
         else:
             # assign every factor to 1
             self.prob_factors_for_each_class = tuple(1. for _ in range(self.num_classes))
-        # shuffle before start
-        self.on_epoch_end()
 
     def _load_and_preprocess_batch(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
