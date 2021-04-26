@@ -2,70 +2,93 @@ from typing import Tuple, List, Optional
 
 import tensorflow as tf
 
-from tensorflow_utils.models.resnet_blocks import resnet50_backend
+from tensorflow_utils.models.resnet50 import resnet50_backend
 
 
-def get_mobilenet_v2_model(input_shape:Tuple[int, int, int],
-                           dense_neurons_after_conv:List[int,...],
-                           dropout:float=0.3,
-                           output_neurons:int=7, pooling_at_the_end:Optional[str]=None,
-                           pretrained:bool=True)->tf.keras.Model:
+def get_mobilenet_v2_model(input_shape: Tuple[int, int, int],
+                           dense_neurons_after_conv: List[int],
+                           dropout: float = 0.3,
+                           output_neurons: int = 7, pooling_at_the_end: Optional[str] = None,
+                           pretrained: bool = True) -> tf.keras.Model:
     if pretrained:
-        weights='imagenet'
+        weights = 'imagenet'
     else:
-        weights=None
-    mobilenet_v2_model=tf.keras.applications.mobilenet_v2.MobileNetV2(input_shape=input_shape,
-                                                                      include_top=False,
-                                                                      weights=weights,
-                                                                      pooling=pooling_at_the_end)
-    x=mobilenet_v2_model.output
-    for idx_dense_layer_neurons in range(len(dense_neurons_after_conv)-1):
-        neurons=dense_neurons_after_conv[idx_dense_layer_neurons]
+        weights = None
+    mobilenet_v2_model = tf.keras.applications.mobilenet_v2.MobileNetV2(input_shape=input_shape,
+                                                                        include_top=False,
+                                                                        weights=weights,
+                                                                        pooling=pooling_at_the_end)
+    x = mobilenet_v2_model.output
+    for idx_dense_layer_neurons in range(len(dense_neurons_after_conv) - 1):
+        neurons = dense_neurons_after_conv[idx_dense_layer_neurons]
         x = tf.keras.layers.Dense(neurons, activation='relu')(x)
         if dropout: x = tf.keras.layers.Dropout(dropout)(x)
     # last layer
     x = tf.keras.layers.Dense(dense_neurons_after_conv[-1], activation='relu')(x)
-    output=tf.keras.layers.Dense(output_neurons, activation='softmax')(x)
-    result_model=tf.keras.Model(inputs=mobilenet_v2_model.inputs, outputs=[output])
+    output = tf.keras.layers.Dense(output_neurons, activation='softmax')(x)
+    result_model = tf.keras.Model(inputs=mobilenet_v2_model.inputs, outputs=[output])
     return result_model
 
 
-'''def get_VGGFace2_resnet_model(input_shape:Tuple[int, int, int],
-                           dense_neurons_after_conv:List[int,...],
-                           dropout:float=0.3,
-                           output_neurons:int=7, pooling_at_the_end:Optional[str]=None,
-                           pretrained:bool=True,
-                           path_to_weights:Optional[str]=None)->tf.keras.Model:
+def _get_pretrained_VGGFace2_model(path_to_weights: str, pretrained: bool = True) -> tf.keras.Model:
     # inputs are of size 224 x 224 x 3
+    input_dim = (224, 224, 3)
     inputs = tf.keras.layers.Input(shape=input_dim, name='base_input')
     x = resnet50_backend(inputs)
 
-    # pooling
-    if pooling_at_the_end=='average':
-        x = tf.keras.layers.GlobalAveragePooling2D(name='global_avg_pool')(x)
-    elif pooling_at_the_end=='max':
-        x = tf.keras.layers.GlobalMaxPooling2D(name='global_max_pool')(x)
     # AvgPooling
-    x = keras.layers.AveragePooling2D((7, 7), name='avg_pool')(x)
-    x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(512, activation='relu', name='dim_proj')(x)
-
-    if mode == 'train':
-        y = keras.layers.Dense(nb_classes, activation='softmax',
-                               use_bias=False, trainable=True,
-                               kernel_initializer='orthogonal',
-                               kernel_regularizer=keras.regularizers.l2(weight_decay),
-                               name='classifier_low_dim')(x)
-    else:
-        y = keras.layers.Lambda(lambda x: keras.backend.l2_normalize(x, 1))(x)
+    x = tf.keras.layers.AveragePooling2D((7, 7), name='avg_pool')(x)
+    x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.Dense(512, activation='relu', name='dim_proj')(x)
+    y = tf.keras.layers.Dense(8631, activation='softmax',
+                              use_bias=False, name='classifier_low_dim')(x)
 
     # Compile
-    model = keras.models.Model(inputs=inputs, outputs=y)
-    if optimizer == 'sgd':
-        opt = keras.optimizers.SGD(lr=0.1, momentum=0.9, decay=0.0, nesterov=True)
-    else:
-        opt = keras.optimizers.Adam()
-    model.compile(optimizer=opt,
-                  loss='categorical_crossentropy',
-                  metrics=['acc'])
-    return model'''
+    model = tf.keras.models.Model(inputs=inputs, outputs=y)
+    model.compile(optimizer='SGD', loss='mse')
+    if pretrained:
+        model.load_weights(path_to_weights)
+    return model
+
+
+def get_modified_VGGFace2_resnet_model(dense_neurons_after_conv: Tuple[int,...],
+                                       dropout: float = 0.3,
+                                       regularization:Optional[tf.keras.regularizers.Regularizer]=None,
+                                       output_neurons: int = 7, pooling_at_the_end: Optional[str] = None,
+                                       pretrained: bool = True,
+                                       path_to_weights: Optional[str] = None) -> tf.keras.Model:
+    pretrained_VGGFace2 = _get_pretrained_VGGFace2_model(path_to_weights, pretrained=pretrained)
+    x=pretrained_VGGFace2.get_layer('activation_48').output
+    # take pooling or not
+    if pooling_at_the_end is not None:
+        if pooling_at_the_end=='avg':
+            x=tf.keras.layers.GlobalAveragePooling2D()(x)
+        elif pooling_at_the_end=='max':
+            x=tf.keras.layers.GlobalMaxPooling2D()(x)
+        else:
+            raise AttributeError('Parameter pooling_at_the_end can be either \'avg\' or \'max\'. Got %s.'%(pooling_at_the_end))
+    # create Dense layers
+    for dense_layer_idx in range(len(dense_neurons_after_conv)-1):
+        num_neurons_on_layer=dense_neurons_after_conv[dense_layer_idx]
+        x = tf.keras.layers.Dense(num_neurons_on_layer, activation='relu', kernel_regularizer=regularization)(x)
+        if dropout:
+            x = tf.keras.layers.Dropout(dropout)(x)
+    # pre-last Dense layer
+    num_neurons_on_layer=dense_neurons_after_conv[-1]
+    x = tf.keras.layers.Dense(num_neurons_on_layer, activation='relu')(x)
+    # Output softmax layer
+    output = tf.keras.layers.Dense(output_neurons, activation='softmax')(x)
+    # create model
+    model=tf.keras.Model(inputs=pretrained_VGGFace2.inputs, outputs=[output])
+    del pretrained_VGGFace2
+    return model
+
+
+
+if __name__ == "__main__":
+    path_to_weights = r'D:\Downloads\vggface2_Keras\vggface2_Keras\model\resnet50_softmax_dim512\weights.h5'
+    model = get_modified_VGGFace2_resnet_model(dense_neurons_after_conv=(1024, 512),
+                                       dropout= 0.3, regularization=tf.keras.regularizers.l1_l2(0.0001),
+                                       output_neurons = 7, pooling_at_the_end= 'avg',
+                                       pretrained= True, path_to_weights=path_to_weights)
+    model.summary()
