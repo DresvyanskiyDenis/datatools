@@ -184,8 +184,62 @@ class ImageDataLoader_multilabel(Sequence):
 
         return (result_data.astype('float32'), result_labels)
 
-    def _mixup(self, images: np.ndarray, labels: np.ndarray, alfa: float = 0.2):
-        raise Exception('Mixup is not implemented')
+    def _mixup_data(self, data:np.ndarray, beta_values)-> np.ndarray:
+        # TODO: write description
+        if data.shape[0]%2!=0:
+            raise AttributeError('The number of provided data instances during mixup should be odd. Got %i.'%(data.shape[0]))
+        if data.shape[0]/2!=beta_values.shape[0]:
+            raise AttributeError('The number of images should be the double value of number of beta values. '
+                                 'Got images:%i, beta_values:%i.'%(data.shape[0], beta_values.shape[0]))
+        middle_point=data.shape[2]//2
+        data_left_part=data[:middle_point]
+        data_right_part=data[middle_point:]
+        # to make broadcasting possible
+        beta_values_shape=[1 for i in range(len(data.shape))]
+        beta_values_shape[0]=-1
+        beta_values=beta_values.reshape(tuple(beta_values_shape))
+        # generation of new mixup images
+        # first part is data=first_data_instance*beta+second_data_instance*(1-beta)
+        new_generated_data_part_1=data_left_part*beta_values+data_right_part*(1.-beta_values)
+        # second part is data=first_data_instance*(1-beta)+second_data_instance*beta
+        new_generated_data_part_2=data_left_part*(1.-beta_values)+data_right_part*beta_values
+        # concatenate generated parts
+        new_generated_data=np.concatenate([new_generated_data_part_1, new_generated_data_part_2])
+        return new_generated_data
+
+
+    def _mixup_multi_labels(self, labels:np.ndarray, beta_values:np.ndarray)->np.ndarray:
+        # TODO: write description
+        # labels has shape (num_instances, num_labels_type, num_classes)
+        for label_type_idx in range(labels.shape[1]):
+            labels[:,label_type_idx]=self._mixup_data(labels[:, label_type_idx], beta_values)
+        return labels
+
+    def _mixup(self, images: np.ndarray, labels: np.ndarray, alfa: float = 0.2)->Tuple[np.ndarray, np.ndarray]:
+        # TODO: write description
+        # TODO: finish this function
+        portion = int(np.ceil(self.mixup * images.shape[0]))
+        if portion % 2 == 1: portion += 1
+        if portion == 0: return images, labels
+        # generate permutations for choosing portion number of instances for mixup
+        indexes_to_choose = np.random.permutation(images.shape[0])
+        # generate beta values
+        beta_values = np.random.beta(alfa, alfa, portion // 2)
+        # save indexes of mixup and non-mixup data and labels
+        indexes_for_mixup=indexes_to_choose[:portion]
+        indexes_without_mixup = indexes_to_choose[portion:]
+        # generate mixup data and labels
+        mixup_data=self._mixup_data(images[indexes_for_mixup], beta_values)
+        mixup_labels=self._mixup_multi_labels(labels[indexes_for_mixup], beta_values)
+        # take non_mixup data and labels
+        non_mixup_data=images[indexes_without_mixup]
+        non_mixup_labels=labels[indexes_without_mixup]
+        # concatenate them and shuffle
+        result_data=np.concatenate([mixup_data, non_mixup_data], axis=0)
+        result_labels=np.concatenate([mixup_labels, non_mixup_labels], axis=0)
+        permutations=np.random.permutation(result_data.shape[0])
+        result_data, result_labels = result_data[permutations], result_labels[permutations]
+        return result_data, result_labels
 
     def on_epoch_end(self):
         # TODO: write description
