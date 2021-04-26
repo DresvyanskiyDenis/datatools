@@ -99,7 +99,7 @@ class validation_with_generator_callback(tf.keras.callbacks.Callback):
         else:
             self.evaluation_metric = None
         # If logger is provided, all the metrics during training process will be written
-        self.logger = None
+        self.logger = logger
 
     def on_train_begin(self, logs=None):
         # Initialize the best as infinity.
@@ -109,7 +109,7 @@ class validation_with_generator_callback(tf.keras.callbacks.Callback):
                               eval_metric_value: Optional[float] = None) -> None:
         string_to_write = ''
         for metric_idx in range(len(self.metrics)):
-            string_to_write += 'metric: %s, value:%f' % (self.metrics[metric_idx], metric_values[metric_idx])
+            string_to_write += 'metric: %s, value:%f\n' % (self.metrics[metric_idx], metric_values[metric_idx])
         if eval_metric_value is not None:
             string_to_write += 'evaluation metric: %s, value:%f' % (self.evaluation_metric, eval_metric_value)
         print(string_to_write)
@@ -137,7 +137,7 @@ class validation_with_generator_callback(tf.keras.callbacks.Callback):
         total_predictions = np.zeros((0,))
         total_ground_truth = np.zeros((0,))
         for x, y in self.val_generator:
-            predictions = model.predict(x)
+            predictions = self.model.predict(x)
             predictions = predictions.argmax(axis=-1).reshape((-1,))
             total_predictions = np.append(total_predictions, predictions)
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
