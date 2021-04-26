@@ -84,7 +84,7 @@ class ImageDataLoader_multilabel(Sequence):
     def _check_provided_params(self):
         # TODO: write description
         # checking the provided DataFrame
-        if not self.class_columns in self.paths_with_labels.columns.to_list():
+        if not set(self.class_columns).issubset(self.paths_with_labels.columns.to_list()):
             raise AttributeError('Dataframe does not contain provided class_columns. '
                                  'Dataframe columns:%s, Got %s.'
                                  % (self.paths_with_labels.columns.to_list(), self.class_columns))
@@ -128,10 +128,10 @@ class ImageDataLoader_multilabel(Sequence):
             raise AttributeError('Parameter mixup should be float number between 0 and 1, '
                                  'representing the portion of images to be mixup applied.')
         # create a pool of workers to do multiprocessing during loading and preprocessing
-        self.pool = multiprocessing.Pool(self.pool_workers)
+        self.pool = multiprocessing.Pool(self.num_workers)
         # calculate the number of classes if it is not provided
         if self.num_classes is None:
-            self.num_classes = self.paths_with_labels['class'].unique().shape[0]
+            self.num_classes = self.paths_with_labels.iloc[:,1].unique().shape[0]
         # check if provided len of prob_factors_for_each_class is the same as num_classes
         if self.prob_factors_for_each_class is not None:
             if len(self.prob_factors_for_each_class) != self.num_classes:
@@ -145,7 +145,7 @@ class ImageDataLoader_multilabel(Sequence):
         # TODO: write description
         filenames = self.paths_with_labels['filename'].iloc[
                     idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
-        labels = self.paths_with_labels['class'].iloc[
+        labels = self.paths_with_labels[self.class_columns].iloc[
                  idx * self.batch_size:(idx + 1) * self.batch_size].values
         results = []
         for filename_idx in range(filenames.shape[0]):
@@ -177,7 +177,7 @@ class ImageDataLoader_multilabel(Sequence):
         # one-hot-label encoding
         for label_type_idx in range(len(self.class_columns)):
             result_labels[:, label_type_idx] = np.eye(self.num_classes)[
-                result_labels[:, label_type_idx].reshape((-1,)).astype('int32')]
+                labels[:, label_type_idx].reshape((-1,)).astype('int32')]
         # mixup
         if self.mixup is not None:
             result_data, result_labels = self._mixup(result_data, result_labels)
@@ -191,7 +191,7 @@ class ImageDataLoader_multilabel(Sequence):
         if data.shape[0]/2!=beta_values.shape[0]:
             raise AttributeError('The number of images should be the double value of number of beta values. '
                                  'Got images:%i, beta_values:%i.'%(data.shape[0], beta_values.shape[0]))
-        middle_point=data.shape[2]//2
+        middle_point=data.shape[0]//2
         data_left_part=data[:middle_point]
         data_right_part=data[middle_point:]
         # to make broadcasting possible
