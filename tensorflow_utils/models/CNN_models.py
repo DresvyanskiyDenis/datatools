@@ -1,4 +1,4 @@
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 
 import tensorflow as tf
 
@@ -54,7 +54,7 @@ def _get_pretrained_VGGFace2_model(path_to_weights: str, pretrained: bool = True
 def get_modified_VGGFace2_resnet_model(dense_neurons_after_conv: Tuple[int,...],
                                        dropout: float = 0.3,
                                        regularization:Optional[tf.keras.regularizers.Regularizer]=None,
-                                       output_neurons: int = 7, pooling_at_the_end: Optional[str] = None,
+                                       output_neurons: Union[Tuple[int,...], int] = 7, pooling_at_the_end: Optional[str] = None,
                                        pretrained: bool = True,
                                        path_to_weights: Optional[str] = None) -> tf.keras.Model:
     pretrained_VGGFace2 = _get_pretrained_VGGFace2_model(path_to_weights, pretrained=pretrained)
@@ -76,10 +76,18 @@ def get_modified_VGGFace2_resnet_model(dense_neurons_after_conv: Tuple[int,...],
     # pre-last Dense layer
     num_neurons_on_layer=dense_neurons_after_conv[-1]
     x = tf.keras.layers.Dense(num_neurons_on_layer, activation='relu')(x)
-    # Output softmax layer
-    output = tf.keras.layers.Dense(output_neurons, activation='softmax')(x)
+    # If outputs should be several, then create several layers, otherwise one
+    if isinstance(output_neurons, tuple):
+        output_layers=[]
+        for num_output_neurons in output_neurons:
+            output_layer_i=tf.keras.layers.Dense(num_output_neurons, activation='softmax')(x)
+            output_layers.append(output_layer_i)
+    else:
+        output_layers = tf.keras.layers.Dense(output_neurons, activation='softmax')(x)
+        # in tf.keras.Model it should be always a list (even when it has only 1 element)
+        output_layers = [output_layers]
     # create model
-    model=tf.keras.Model(inputs=pretrained_VGGFace2.inputs, outputs=[output])
+    model=tf.keras.Model(inputs=pretrained_VGGFace2.inputs, outputs=output_layers)
     del pretrained_VGGFace2
     return model
 
