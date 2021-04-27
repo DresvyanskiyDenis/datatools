@@ -163,6 +163,103 @@ class validation_with_generator_callback(tf.keras.callbacks.Callback):
         return tuple(metric_values), eval_metric_value
 
 
+class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback):
+    # TODO: write description
+
+    def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
+                 metrics: Tuple[Callable[[np.ndarray, np.ndarray], float]],
+                 num_label_types:int,
+                 logger: Optional[TextIO] = None,
+                 num_metric_to_set_weights: Optional[int] = None):
+        super(validation_with_generator_callback_multilabel, self).__init__()
+        # best_weights to store the weights at which the minimum UAR occurs.
+        self.best_weights = None
+        # generator to iterate on it on every end of epoch
+        self.val_generator = val_generator
+        self.metrics = metrics
+        self.num_label_types=num_label_types
+        # check if evaluation metric was provided
+        if num_metric_to_set_weights is not None:
+            self.evaluation_metric = self.metrics[num_metric_to_set_weights]
+            self.metrics = tuple(metric for i, metric in enumerate(metrics) if i != num_metric_to_set_weights)
+        else:
+            self.evaluation_metric = None
+        # If logger is provided, all the metrics during training process will be written
+        self.logger = logger
+
+    def on_train_begin(self, logs=None):
+        # Initialize the best as infinity.
+        self.best = 0
+
+    def on_epoch_begin(self, epoch, logs=None):
+        if self.logger is not None:
+            self.logger.write('Epoch number:%i ----------------------------------'%epoch)
+
+
+    def print_and_log_metrics(self, metric_values: Tuple[List[float], ...],
+                              eval_metric_value: Optional[List[float]] = None) -> None:
+
+        string_to_write = ''
+        for metric_idx in range(len(self.metrics)):
+            string_to_write += 'metric: %s, '%self.metrics[metric_idx]
+            for label_type_idx in range(self.num_label_types):
+                string_to_write += 'value_class_%i:%f\n' % (label_type_idx, metric_values[metric_idx, label_type_idx])
+        if eval_metric_value is not None:
+            string_to_write += 'evaluation metric: %s, '%self.evaluation_metric
+            for label_type_idx in range(self.num_label_types):
+                string_to_write+='value_class_%i:%f\n' % (label_type_idx, eval_metric_value[label_type_idx])
+        print(string_to_write)
+        # log it if logger is provided
+        if self.logger is not None:
+            self.logger.write(string_to_write + '\n')
+
+    def on_epoch_end(self, epoch, logs=None):
+        # TODO: write description
+        metric_values, eval_metric_value = self.custom_recall_validation_with_generator()
+        self.print_and_log_metrics(metric_values, eval_metric_value)
+        # if evaluation_metric was chosen
+        if self.evaluation_metric is not None:
+            eval_metric_value=np.array(eval_metric_value).mean()
+            if np.greater(eval_metric_value, self.best):
+                self.best = eval_metric_value
+                self.best_weights = self.model.get_weights()
+
+    def on_train_end(self, logs=None):
+        # TODO: write description
+        if self.evaluation_metric is not None:
+            self.model.set_weights(self.best_weights)
+
+    def _get_ground_truth_and_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
+        # TODO: write description
+        total_predictions = np.zeros((0,self.num_label_types))
+        total_ground_truth = np.zeros((0,self.num_label_types))
+        for x, y in self.val_generator:
+            predictions = np.array(self.model.predict(x))
+            predictions = predictions.argmax(axis=-1)
+            total_predictions = np.append(total_predictions, predictions)
+            total_ground_truth = np.append(total_ground_truth, np.array(y).argmax(axis=-1))
+        return total_ground_truth, total_predictions
+
+    def custom_recall_validation_with_generator(self) -> Tuple[Tuple[List[float], ...],
+                                                               Union[float, None]]:
+        # TODO: write description
+        ground_truth, predictions = self._get_ground_truth_and_predictions()
+        metric_values = []
+        eval_metric_value = None
+        for metric_idx in range(len(self.metrics)):
+            metric_value=[]
+            for label_type_idx in range(self.num_label_types):
+                metric_value.append(self.metrics[metric_idx](ground_truth[:,label_type_idx],
+                                                             predictions[:, label_type_idx]))
+            metric_values.append(metric_value)
+        if self.evaluation_metric is not None:
+            eval_metric_value=[]
+            for label_type_idx in range(self.num_label_types):
+                eval_metric_value.append(self.evaluation_metric(ground_truth[:,label_type_idx],
+                                                                predictions[:,label_type_idx]))
+        return tuple(metric_values), eval_metric_value
+
+
 if __name__ == '__main__':
     a = get_annealing_LRreduce_callback(0.2, 0.1, 9)
     x = np.zeros((100, 100))
