@@ -105,8 +105,14 @@ class validation_with_generator_callback(tf.keras.callbacks.Callback):
         # Initialize the best as infinity.
         self.best = 0
 
+    def on_epoch_begin(self, epoch, logs=None):
+        if self.logger is not None:
+            self.logger.write('Epoch number:%i ----------------------------------'%epoch)
+
+
     def print_and_log_metrics(self, metric_values: Tuple[float, ...],
                               eval_metric_value: Optional[float] = None) -> None:
+
         string_to_write = ''
         for metric_idx in range(len(self.metrics)):
             string_to_write += 'metric: %s, value:%f\n' % (self.metrics[metric_idx], metric_values[metric_idx])
