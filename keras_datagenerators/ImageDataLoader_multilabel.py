@@ -249,6 +249,7 @@ class ImageDataLoader_multilabel(Sequence):
     def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
         data, labels = self._load_and_preprocess_batch(index)
+        labels=[labels[:,i] for i in range(labels.shape[1])]
         if self.preprocess_function is not None:
             data = self.preprocess_function(data)
         return (data, labels)
