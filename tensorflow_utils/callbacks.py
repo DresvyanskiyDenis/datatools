@@ -193,7 +193,7 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
 
     def on_epoch_begin(self, epoch, logs=None):
         if self.logger is not None:
-            self.logger.write('Epoch number:%i ----------------------------------'%epoch)
+            self.logger.write('Epoch number:%i ----------------------------------\n'%epoch)
 
 
     def print_and_log_metrics(self, metric_values: Tuple[List[float], ...],
@@ -201,17 +201,18 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
 
         string_to_write = ''
         for metric_idx in range(len(self.metrics)):
-            string_to_write += 'metric: %s, '%self.metrics[metric_idx]
+            string_to_write += 'metric: %s\n'%self.metrics[metric_idx]
             for label_type_idx in range(self.num_label_types):
-                string_to_write += 'value_class_%i:%f\n' % (label_type_idx, metric_values[metric_idx, label_type_idx])
+                string_to_write += 'value_class_%i:%f\n' % (label_type_idx, metric_values[metric_idx][label_type_idx])
         if eval_metric_value is not None:
-            string_to_write += 'evaluation metric: %s, '%self.evaluation_metric
+            string_to_write += 'evaluation metric: %s\n'%self.evaluation_metric
             for label_type_idx in range(self.num_label_types):
                 string_to_write+='value_class_%i:%f\n' % (label_type_idx, eval_metric_value[label_type_idx])
         print(string_to_write)
         # log it if logger is provided
         if self.logger is not None:
             self.logger.write(string_to_write + '\n')
+            self.logger.flush()
 
     def on_epoch_end(self, epoch, logs=None):
         # TODO: write description
@@ -231,13 +232,13 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
 
     def _get_ground_truth_and_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
-        total_predictions = np.zeros((0,self.num_label_types))
-        total_ground_truth = np.zeros((0,self.num_label_types))
+        total_predictions = np.empty((0,self.num_label_types))
+        total_ground_truth = np.empty((0,self.num_label_types))
         for x, y in self.val_generator:
             predictions = np.array(self.model.predict(x))
-            predictions = predictions.argmax(axis=-1)
-            total_predictions = np.append(total_predictions, predictions)
-            total_ground_truth = np.append(total_ground_truth, np.array(y).argmax(axis=-1))
+            predictions = predictions.argmax(axis=-1).T
+            total_predictions = np.append(total_predictions, predictions, axis=0)
+            total_ground_truth = np.append(total_ground_truth, np.array(y).argmax(axis=-1).T, axis=0)
         return total_ground_truth, total_predictions
 
     def custom_recall_validation_with_generator(self) -> Tuple[Tuple[List[float], ...],
