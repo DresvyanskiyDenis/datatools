@@ -33,7 +33,6 @@ class ImageDataLoader_multilabel(Sequence):
     mixup: float
     preprocess_function: Callable
 
-    prob_factors_for_each_class: Optional[Tuple[float, ...]]
     paths_with_labels: pd.DataFrame
     class_columns: List[str]
     batch_size: int
@@ -52,7 +51,6 @@ class ImageDataLoader_multilabel(Sequence):
                  channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
                  worse_quality: Optional[float] = None,
                  mixup: Optional[float] = None,
-                 prob_factors_for_each_class: Optional[Tuple[float, ...]] = None,
                  pool_workers: int = 4):
         # TODO: write description
         self.horizontal_flip = horizontal_flip
@@ -68,7 +66,6 @@ class ImageDataLoader_multilabel(Sequence):
         self.bluring = bluring
         self.worse_quality = worse_quality
         self.mixup = mixup
-        self.prob_factors_for_each_class = prob_factors_for_each_class
 
         self.paths_with_labels = paths_with_labels
         self.class_columns = class_columns
