@@ -80,7 +80,10 @@ def get_modified_VGGFace2_resnet_model(dense_neurons_after_conv: Tuple[int,...],
     if isinstance(output_neurons, tuple):
         output_layers=[]
         for num_output_neurons in output_neurons:
-            output_layer_i=tf.keras.layers.Dense(num_output_neurons, activation='softmax')(x)
+            if dropout:
+                output_layer_i = tf.keras.layers.Dropout(dropout)(x)
+            output_layer_i = tf.keras.layers.Dense(128, activation='relu')(output_layer_i)
+            output_layer_i=tf.keras.layers.Dense(num_output_neurons, activation='softmax')(output_layer_i)
             #output_layer_i=tf.keras.layers.Reshape((-1, 1))(output_layer_i)
             output_layers.append(output_layer_i)
     else:
