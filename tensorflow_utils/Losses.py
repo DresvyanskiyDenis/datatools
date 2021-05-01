@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+TODO: add description
+"""
+
 import numpy as np
 import tensorflow.keras.backend as K
 

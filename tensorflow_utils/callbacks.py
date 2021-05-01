@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+TODO: add description
+"""
+
 from functools import partial
 from typing import Callable, Iterable, Tuple, List, Optional, Union, TextIO
 
