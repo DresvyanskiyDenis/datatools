@@ -18,7 +18,7 @@ __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 
 
-def extract_openface_FAU_from_images_in_dir(path_to_dir:str, path_to_extractor:str)->pd.DataFrame:
+def extract_openface_FAU_from_images_in_dir(path_to_dir:str, path_to_extractor:str)->Optional[pd.DataFrame]:
     # TODO: write description
     tmp_dir='tmp_dir'
     # check if output_dir exists
@@ -29,13 +29,15 @@ def extract_openface_FAU_from_images_in_dir(path_to_dir:str, path_to_extractor:s
     # read extracted features and save them in dataframe
     result_df=[]
     filenames=os.listdir(tmp_dir)
-    filenames=[filename for filename in filenames if filename.split('.')[-1]=='csv']
+    filenames = [filename for filename in filenames if filename.split('.')[-1] == 'csv']
+    if len(filenames)==0:
+        return None
     for filename in filenames:
         df=pd.read_csv(os.path.join(tmp_dir, filename))
         result_df.append(df)
     # concatenate obtained dataframes
     result_df=pd.concat(result_df, axis=0)
-    result_df['filename']=filenames
+    result_df['filename']=[filename.replace('.csv','') for filename in filenames]
     result_df.columns=[column.strip() for column in result_df.columns]
     result_df=result_df.drop(columns=['face', 'confidence'])
     # delete tmp dir with all files
