@@ -43,11 +43,4 @@ def get_Dense_model(input_shape:Tuple[int,...],
 
 
 if __name__=="__main__":
-    model=get_Dense_model(input_shape=(30,),
-                    dense_neurons=(128,64,32),
-                    activations='relu',
-                    dropout= 0.3,
-                    regularization=tf.keras.regularizers.l2(0.0001),
-                    output_neurons = 4,
-                    activation_function_for_output='softmax')
-    model.summary()
+    pass

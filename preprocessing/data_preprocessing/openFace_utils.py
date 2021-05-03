@@ -5,6 +5,8 @@ TODO: write description of module
 """
 
 import shutil
+from typing import Optional
+
 import pandas as pd
 import numpy as np
 import subprocess
@@ -34,10 +36,12 @@ def extract_openface_FAU_from_images_in_dir(path_to_dir:str, path_to_extractor:s
         return None
     for filename in filenames:
         df=pd.read_csv(os.path.join(tmp_dir, filename))
-        result_df.append(df)
+        df['filename']=filename
+        max_confident_face_features_idx=df[' confidence'].idxmax()
+        result_df.append(df.iloc[max_confident_face_features_idx, :])
     # concatenate obtained dataframes
-    result_df=pd.concat(result_df, axis=0)
-    result_df['filename']=[filename.replace('.csv','') for filename in filenames]
+    result_df=pd.concat(result_df, axis=1).T
+    result_df['filename']=result_df['filename'].apply(lambda x: x.replace('.csv',''))
     result_df.columns=[column.strip() for column in result_df.columns]
     result_df=result_df.drop(columns=['face', 'confidence'])
     # delete tmp dir with all files
