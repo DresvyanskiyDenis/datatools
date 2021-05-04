@@ -193,7 +193,7 @@ class ImageDataLoader(Sequence):
         left_side_images = images[indexes_to_choose[:middle_idx]]
         left_side_labels = labels[indexes_to_choose[:middle_idx]]
         right_side_images = images[indexes_to_choose[middle_idx:]]
-        right_side_labels = labels[indexes_to_choose[:middle_idx]]
+        right_side_labels = labels[indexes_to_choose[middle_idx:]]
         # generate new images and labels with betta and (1-betta) coefficients
         new_images_1 = left_side_images * beta_values.reshape((-1,1,1,1)) + right_side_images * (1 - beta_values.reshape((-1,1,1,1)))
         new_images_2 = left_side_images * (1.-beta_values.reshape((-1, 1, 1, 1))) + right_side_images * beta_values.reshape((-1, 1, 1, 1))
