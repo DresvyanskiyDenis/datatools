@@ -5,9 +5,8 @@ TODO: write description of package
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import multiprocessing
 
-from keras_datagenerators.ImageDataLoader import ImageDataLoader
+from tensorflow_utils.keras_datagenerators import ImageDataLoader
 
 """
 TODO: write description of module
@@ -16,7 +15,7 @@ import math
 import shutil
 import time
 import matplotlib.pyplot as plt
-from typing import Optional, Tuple, Dict, NamedTuple
+from typing import Dict, NamedTuple
 
 import numpy as np
 import pandas as pd
