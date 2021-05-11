@@ -54,6 +54,6 @@ def extract_openface_FAU_from_images_in_dir(path_to_dir:str, path_to_extractor:s
 if __name__=="__main__":
     path_to_dir=r'E:\Databases\DAiSEE\DAiSEE\dev_processed\extracted_faces\556463012'
     path_to_output=r'E:\Databases\DAiSEE\extracted_openface_features'
-    path_to_extractor='../../../OpenFace\\FaceLandmarkImg.exe'
+    path_to_extractor= '../../OpenFace/FaceLandmarkImg.exe'
     features=extract_openface_FAU_from_images_in_dir(path_to_dir, path_to_extractor)
     a=1+2
