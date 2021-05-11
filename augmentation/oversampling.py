@@ -11,8 +11,8 @@ import imblearn
 import numpy as np
 import pandas as pd
 
-def oversample_by_border_SMOTE(data:np.ndarray, labels:np.ndarray, ratio_of_generating_minor_class:float)->Tuple[np.ndarray, np.ndarray]:
+def oversample_by_border_SMOTE(data:np.ndarray, labels:np.ndarray, sampling_strategy)->Tuple[np.ndarray, np.ndarray]:
     # TODO: write description
-    oversampler=imblearn.over_sampling.BorderlineSMOTE(ratio=ratio_of_generating_minor_class)
+    oversampler=imblearn.over_sampling.BorderlineSMOTE(sampling_strategy=sampling_strategy)
     data, labels=oversampler.fit_resample(data, labels)
     return data, labels
