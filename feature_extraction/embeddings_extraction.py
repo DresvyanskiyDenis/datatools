@@ -4,15 +4,12 @@
 TODO: add description
 """
 import os
-from typing import Optional, Dict, Tuple, Callable
+from typing import Optional, Tuple, Callable
 
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-
-from preprocessing.data_normalizing_utils import VGGFace2_normalization
 from preprocessing.data_preprocessing.image_preprocessing_utils import load_batch_of_images
-from tensorflow_utils.models.CNN_models import get_EMO_VGGFace2
 
 
 def extract_deep_embeddings_from_batch_of_images(images:np.ndarray, extractor:tf.keras.Model, batch_size:Optional[int]=None)->np.ndarray:
@@ -55,11 +52,4 @@ def extract_deep_embeddings_from_images_in_dir(path_to_dir:str, extractor:tf.ker
 
 
 if __name__=='__main__':
-    # just for testing
-    path_to_images=r'D:\Databases\DAiSEE\DAiSEE\train_preprocessed\extracted_faces\24851011'
-    # create model
-    model=get_EMO_VGGFace2(path=r'C:\Users\Dresvyanskiy\Desktop\Projects\EMOVGGFace_model\weights_0_66_37_affectnet_cat.h5')
-    emb_layer=model.get_layer('dense')
-    model=tf.keras.Model(inputs=model.inputs, outputs=[emb_layer.output])
-    model.compile()
-    extract_deep_embeddings_from_images_in_dir(path_to_images, model, preprocessing_functions=(VGGFace2_normalization,))
+    pass

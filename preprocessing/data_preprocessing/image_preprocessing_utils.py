@@ -7,7 +7,6 @@ from typing import Tuple
 
 from PIL import Image
 import numpy as np
-import pandas as pd
 from scipy import ndimage
 from skimage import transform, exposure
 
