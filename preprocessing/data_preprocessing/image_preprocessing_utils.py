@@ -24,6 +24,18 @@ def load_image(path:str)-> np.ndarray:
     with Image.open(path) as im:
         return np.array(im)
 
+def load_batch_of_images(paths:Tuple[str,...])-> np.ndarray:
+    # TODO: write description
+    img=load_image(paths[0])
+    img_shape=img.shape
+    images_array=np.zeros(((len(paths),)+img_shape))
+    images_array[0]=img
+    for i in range(1, len(paths)):
+        img=load_image(paths[i])
+        images_array[i]=img
+    return images_array.astype('uint8')
+
+
 def save_image(img:np.ndarray, path_to_output:str)->None:
     # TODO: write description
     img = Image.fromarray(img)
