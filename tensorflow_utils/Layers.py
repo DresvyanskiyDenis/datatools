@@ -175,7 +175,7 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
         return output
 
     def compute_output_shape(self, input_shape):
-        return (input_shape[0], input_shape[1], input_shape[2],input_shape[3]//self.downsize_factor)
+        return (input_shape[0], input_shape[1], input_shape[2],self.output_shape)
 
 
 
