@@ -82,9 +82,8 @@ class Self_attention_pixel_wise(tf.keras.layers.Layer):
 
 
 class _Self_attention_pixel_wise_without_shortcut(tf.keras.layers.Layer):
-    """Represents pixel-wise convolutional self-attention layer, which is also called by authors non-local block
-    https://arxiv.org/pdf/1711.07971.pdf
-    It uses inheritance from tf.keras.layers.Layer.
+    """The same attention layer as Self_attention_pixel_wise, but without shortcut connection.
+    It is needed for constructing multi-head convolution self-attention (see below).
     """
     def __init__(self, downsize_factor:int=1, **kwargs):
         """Initializes layer. Downsize_factor is needed to reduce the output number of channels
@@ -143,13 +142,6 @@ class _Self_attention_pixel_wise_without_shortcut(tf.keras.layers.Layer):
 class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
 
     def __init__(self, num_heads:int, output_filters:int, downsize_factor:int=8,  **kwargs):
-        """Initializes layer. Downsize_factor is needed to reduce the output number of channels
-           by defined factor (by integer division on it)
-
-        :param downsize_factor: int
-                    see __init__ description
-        :param kwargs:
-        """
         self.num_heads=num_heads
         self.downsize_factor=downsize_factor
         self.heads=[]
@@ -193,8 +185,8 @@ if __name__=="__main__":
     input_shape=(50,50,128)
     model=tf.keras.Sequential()
     model.add(tf.keras.layers.Input(input_shape))
-    model.add(Multi_head_self_attention_pixel_wise(output_filters=64, num_heads=4, downsize_factor=2))
-    model.add(Multi_head_self_attention_pixel_wise(output_filters=32, num_heads=4, downsize_factor=2))
+    model.add(Multi_head_self_attention_pixel_wise(output_filters=64, num_heads=2, downsize_factor=2))
+    model.add(Multi_head_self_attention_pixel_wise(output_filters=32, num_heads=2, downsize_factor=2))
     model.add(tf.keras.layers.Flatten())
     model.add(tf.keras.layers.Reshape((-1,1)))
     model.add(tf.keras.layers.GlobalAveragePooling1D())
