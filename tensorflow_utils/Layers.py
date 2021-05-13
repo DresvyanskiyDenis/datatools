@@ -95,7 +95,7 @@ class _Self_attention_pixel_wise_without_shortcut(tf.keras.layers.Layer):
         :param kwargs:
         """
         self.downsize_factor=downsize_factor
-        super(Self_attention_pixel_wise, self).__init__(**kwargs)
+        super(_Self_attention_pixel_wise_without_shortcut, self).__init__(**kwargs)
 
     def build(self, input_shape):
         # create 1x1 convolutions for query, key, value and output
@@ -109,7 +109,7 @@ class _Self_attention_pixel_wise_without_shortcut(tf.keras.layers.Layer):
         self._trainable_weights=self.key_conv.trainable_weights+self.query_conv.trainable_weights+\
                                 self.value_conv.trainable_weights
         # invoke the super.build() function as defined by keras authors
-        super(Self_attention_pixel_wise, self).build(input_shape)
+        super(_Self_attention_pixel_wise_without_shortcut, self).build(input_shape)
         self.built=True
 
     def call(self, input):
@@ -133,7 +133,7 @@ class _Self_attention_pixel_wise_without_shortcut(tf.keras.layers.Layer):
         output_value=tf.keras.layers.Dot(axes=(2,1))([softmax_output, output_value_conv])
         # reshape
         output = tf.keras.layers.Reshape((height, width,
-                                        tf.keras.backend.int_shape(output_value)[-1]//self.downsize_factor))(output_value)
+                                        tf.keras.backend.int_shape(output_value)[-1]))(output_value)
         return output
 
     def compute_output_shape(self, input_shape):
@@ -142,7 +142,7 @@ class _Self_attention_pixel_wise_without_shortcut(tf.keras.layers.Layer):
 
 class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
 
-    def __init__(self, num_heads:int, output_shape:int, downsize_factor:int=8,  **kwargs):
+    def __init__(self, num_heads:int, output_filters:int, downsize_factor:int=8,  **kwargs):
         """Initializes layer. Downsize_factor is needed to reduce the output number of channels
            by defined factor (by integer division on it)
 
@@ -153,16 +153,21 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
         self.num_heads=num_heads
         self.downsize_factor=downsize_factor
         self.heads=[]
-        super(Self_attention_pixel_wise, self).__init__(**kwargs)
+        self.output_filters=output_filters
+        super(Multi_head_self_attention_pixel_wise, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        for head_idx in range(len(self.heads)):
-            head=Self_attention_pixel_wise(self.downsize_factor)
+        # construct heads
+        for head_idx in range(self.num_heads):
+            head =_Self_attention_pixel_wise_without_shortcut(self.downsize_factor)
             head.build(input_shape)
             self.heads.append(head)
             self._trainable_weights=self._trainable_weights+head.trainable_weights
+        # construct output convolution
+        self.output_conv=tf.keras.layers.Conv1D(self.output_filters, 1, padding='same')
+        self.output_conv.build((input_shape[0],input_shape[1],input_shape[2],input_shape[3]*len(self.heads)//self.downsize_factor))
         # invoke the super.build() function as defined by keras authors
-        super(Self_attention_pixel_wise, self).build(input_shape)
+        super(Multi_head_self_attention_pixel_wise, self).build(input_shape)
         self.built=True
 
     def call(self, input):
@@ -170,36 +175,12 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
         batch_size, height, width, channels=input.shape
         # go through all heads
         head_outputs=[]
-        for head_idx in range(len(self.heads)):
+        for head_idx in range(self.num_heads):
             head_output=self.heads[head_idx](input)
             head_outputs.append(head_output)
         # concatenate them
-        concat_layer=tf.keras.layers.concatenate(head_outputs, axis=1)
-
-
-
-        # key flow
-        x = self.key_conv(input)
-        output_key_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
-        # query flow
-        x = self.query_conv(input)
-        output_query_conv = tf.keras.layers.Reshape(( -1, tf.keras.backend.int_shape(x)[-1]))(x)
-        output_query_conv_transpose=tf.transpose(output_query_conv, perm=[0,2,1])
-        # value flow
-        x = self.value_conv(input)
-        output_value_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
-        # matrix multiplication for query and key
-        multiplicated_key_query=tf.keras.layers.Dot(axes=(2,1))([output_key_conv, output_query_conv_transpose])
-        # softmax for obtained matrix
-        softmax_output=tf.keras.layers.Softmax()(multiplicated_key_query)
-        # multiply value by obtained softmax matrix
-        output_value=tf.keras.layers.Dot(axes=(2,1))([softmax_output, output_value_conv])
-        # reshape and apply output conv
-        output_value = tf.keras.layers.Reshape(( height, width,
-                                                tf.keras.backend.int_shape(output_value)[-1]))(output_value)
-        output_value=self.output_conv(output_value)
-        # add input to the output value (shortcut connection)
-        output = tf.keras.layers.Add()([output_value, input])
+        concat_layer=tf.keras.layers.concatenate(head_outputs, axis=-1)
+        output=self.output_conv(concat_layer)
         return output
 
     def compute_output_shape(self, input_shape):
@@ -212,12 +193,13 @@ if __name__=="__main__":
     input_shape=(50,50,128)
     model=tf.keras.Sequential()
     model.add(tf.keras.layers.Input(input_shape))
-    model.add(Self_attention_pixel_wise(downsize_factor=2))
-    model.add(Self_attention_pixel_wise(downsize_factor=2))
+    model.add(Multi_head_self_attention_pixel_wise(output_filters=64, num_heads=4, downsize_factor=2))
+    model.add(Multi_head_self_attention_pixel_wise(output_filters=32, num_heads=4, downsize_factor=2))
     model.add(tf.keras.layers.Flatten())
     model.add(tf.keras.layers.Reshape((-1,1)))
     model.add(tf.keras.layers.GlobalAveragePooling1D())
     model.add(tf.keras.layers.Flatten())
+    model.build(input_shape)
     model.compile(optimizer='Adam', loss='mse')
     model.summary()
     tf.keras.utils.plot_model(model, show_shapes=True)
@@ -226,6 +208,6 @@ if __name__=="__main__":
     y[:60]=0
     permutations=np.random.permutation(x.shape[0])
     x, y = x[permutations], y[permutations]
-    model.fit(x,y, batch_size=10, epochs=100)
+    model.fit(x,y, batch_size=4, epochs=100)
 
 
