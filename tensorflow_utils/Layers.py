@@ -163,8 +163,6 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
         self.built=True
 
     def call(self, input):
-        # extract shapes
-        batch_size, height, width, channels=input.shape
         # go through all heads
         head_outputs=[]
         for head_idx in range(self.num_heads):
@@ -172,6 +170,7 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
             head_outputs.append(head_output)
         # concatenate them
         concat_layer=tf.keras.layers.concatenate(head_outputs, axis=-1)
+        # apply 1x1 conv layer to concatenated outputs to get needed output size of filters
         output=self.output_conv(concat_layer)
         return output
 
