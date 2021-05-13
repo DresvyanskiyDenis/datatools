@@ -150,12 +150,13 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         # construct heads
+        self.heads=[_Self_attention_pixel_wise_without_shortcut(self.downsize_factor) for _ in range(self.num_heads)]
+        # invoke build() function for every head to construct them
+        [head.build(input_shape) for head in self.heads]
+        # save all trainable parameters in special variable
         for head_idx in range(self.num_heads):
-            head =_Self_attention_pixel_wise_without_shortcut(self.downsize_factor)
-            head.build(input_shape)
-            self.heads.append(head)
-            self._trainable_weights=self._trainable_weights+head.trainable_weights
-        # construct output convolution
+            self._trainable_weights=self._trainable_weights+self.heads[head_idx].trainable_weights
+        # construct output convolution and invoke its build() function
         self.output_conv=tf.keras.layers.Conv1D(self.output_filters, 1, padding='same')
         self.output_conv.build((input_shape[0],input_shape[1],input_shape[2],input_shape[3]*len(self.heads)//self.downsize_factor))
         # invoke the super.build() function as defined by keras authors
@@ -167,7 +168,7 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
         head_outputs=[self.heads[head_idx](input) for head_idx in range(self.num_heads)]
         # concatenate them
         concat_layer=tf.keras.layers.concatenate(head_outputs, axis=-1)
-        # apply 1x1 conv layer to concatenated outputs to get needed output size of filters
+        # apply 1x1 conv layer to concatenated outputs to get needed output size of filters at the end of layer
         output=self.output_conv(concat_layer)
         return output
 
@@ -187,7 +188,6 @@ if __name__=="__main__":
     model.add(tf.keras.layers.Reshape((-1,1)))
     model.add(tf.keras.layers.GlobalAveragePooling1D())
     model.add(tf.keras.layers.Flatten())
-    model.build(input_shape)
     model.compile(optimizer='Adam', loss='mse')
     model.summary()
     tf.keras.utils.plot_model(model, show_shapes=True)
