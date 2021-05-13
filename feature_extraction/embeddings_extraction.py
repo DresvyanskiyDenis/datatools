@@ -3,6 +3,7 @@
 """
 TODO: add description
 """
+import gc
 import os
 from typing import Optional, Tuple, Callable
 
@@ -47,6 +48,8 @@ def extract_deep_embeddings_from_images_in_dir(path_to_dir:str, extractor:tf.ker
                                                       extracted_emb], axis=1),
                                                     columns=columns)
         embeddings=embeddings.append(pd_to_concat, ignore_index=True)
+        del loaded_images
+        gc.collect()
     return embeddings
 
 
