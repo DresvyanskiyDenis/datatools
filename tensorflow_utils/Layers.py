@@ -46,7 +46,9 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
 
 
 class _Self_attention_non_local_block_without_shortcut_connection(tf.keras.layers.Layer):
-    """"""
+    """https://openaccess.thecvf.com/content_cvpr_2018/papers/Wang_Non-Local_Neural_Networks_CVPR_2018_paper.pdf
+
+    """
 
     def __init__(self, output_channels:int, downsize_factor: int = 1, **kwargs):
         """Initializes layer. Downsize_factor is needed to reduce the output number of channels
@@ -126,7 +128,9 @@ class _Self_attention_non_local_block_without_shortcut_connection(tf.keras.layer
 
 
 class Self_attention_non_local_block(tf.keras.layers.Layer):
-    """"""
+    """https://openaccess.thecvf.com/content_cvpr_2018/papers/Wang_Non-Local_Neural_Networks_CVPR_2018_paper.pdf
+
+    """
 
     def __init__(self, output_channels:int, downsize_factor: int = 1, **kwargs):
         """Initializes layer. Downsize_factor is needed to reduce the output number of channels
