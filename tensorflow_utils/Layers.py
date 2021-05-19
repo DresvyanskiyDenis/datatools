@@ -149,6 +149,135 @@ class Multi_head_self_attention_pixel_wise(tf.keras.layers.Layer):
         return (input_shape[0], input_shape[1], input_shape[2],self.output_shape)
 
 
+class _Self_attention_non_local_block_without_shortcut_connection(tf.keras.layers.Layer):
+    """"""
+
+    def __init__(self, output_channels:int, downsize_factor: int = 1, **kwargs):
+        """Initializes layer. Downsize_factor is needed to reduce the output number of channels
+           by defined factor (by integer division on it)
+
+        :param downsize_factor: int
+                    see __init__ description
+        :param kwargs:
+        """
+        self.downsize_factor = downsize_factor
+        self.output_channels=output_channels
+        super(_Self_attention_non_local_block_without_shortcut_connection, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        # input_shape is BxTxHxWxC,
+        # where B- batch_size, T - number of consecutive frames, H - height of image (feature map), W - width, C - number of channels
+        # create 1x1x1 convolutions for query, key, value and output
+        self.key_conv = tf.keras.layers.Conv3D(input_shape[-1] // self.downsize_factor, kernel_size=1, padding='same')
+        self.key_conv.build(input_shape)
+        self.query_conv = tf.keras.layers.Conv3D(input_shape[-1] // self.downsize_factor, kernel_size=1, padding='same')
+        self.query_conv.build(input_shape)
+        self.value_conv = tf.keras.layers.Conv3D(input_shape[-1] // self.downsize_factor, kernel_size=1, padding='same')
+        self.value_conv.build(input_shape)
+        self.output_conv=tf.keras.layers.Conv3D(self.output_channels, kernel_size=1, padding='same')
+        output_conv_input_shape=input_shape
+        output_conv_input_shape[-1]=output_conv_input_shape[-1]//self.downsize_factor
+        self.output_conv.build(output_conv_input_shape)
+        # set trainable weights of this layer to be weights of all inner convolutional layers
+        self._trainable_weights = self.key_conv.trainable_weights + self.query_conv.trainable_weights + \
+                                  self.value_conv.trainable_weights + self.output_conv.trainable_weights
+        # invoke the super.build() function as defined by keras authors
+        super(_Self_attention_non_local_block_without_shortcut_connection, self).build(input_shape)
+        self.built = True
+
+    def call(self, input):
+        # extract shapes
+        batch_size, temporal_dim, height, width, channels = input.shape
+        # key flow
+        x = self.key_conv(input)
+        output_key_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
+        # query flow
+        x = self.query_conv(input)
+        output_query_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
+        output_query_conv_transpose = tf.transpose(output_query_conv, perm=[0, 2, 1])
+        # value flow
+        x = self.value_conv(input)
+        output_value_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
+        # matrix multiplication for query and key
+        multiplicated_key_query = tf.keras.layers.Dot(axes=(2, 1))([output_key_conv, output_query_conv_transpose])
+        # softmax for obtained matrix
+        softmax_output = tf.keras.layers.Softmax()(multiplicated_key_query)
+        # multiply value by obtained softmax matrix
+        output_value = tf.keras.layers.Dot(axes=(2, 1))([softmax_output, output_value_conv])
+        # reshape
+        output = tf.keras.layers.Reshape((height, width,
+                                          tf.keras.backend.int_shape(output_value)[-1]))(output_value)
+        # apply output 1x1x1 conv
+        output = self.output_conv(output)
+        return output
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1], input_shape[2], self.output_channels)
+
+
+class Self_attention_non_local_block(tf.keras.layers.Layer):
+    """"""
+
+    def __init__(self, output_channels:int, downsize_factor: int = 1, **kwargs):
+        """Initializes layer. Downsize_factor is needed to reduce the output number of channels
+           by defined factor (by integer division on it)
+
+        :param downsize_factor: int
+                    see __init__ description
+        :param kwargs:
+        """
+        self.downsize_factor = downsize_factor
+        self.output_channels=output_channels
+        super(Self_attention_non_local_block, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        # input_shape is BxTxHxWxC,
+        # where B- batch_size, T - number of consecutive frames, H - height of image (feature map), W - width, C - number of channels
+        # create instance of _Self_attention_non_local_block_without_shortcut_connection, whcih has all needed operations
+        # except shortcut connection
+        self.non_local_block_without_shortcut=_Self_attention_non_local_block_without_shortcut_connection(self.output_channels, self.downsize_factor)
+        self.non_local_block_without_shortcut.build(input_shape)
+        # create 1x1x1 conv in case the amount of output channels will differ from amount of input channels (to make it similar and permord add operation)
+        # TODO:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if self.output_channels!=tf.keras.backend.int_shape(input_shape)[-1]:
+            self.
+        # set trainable weights of this layer to be weights of all inner convolutional layers
+        self._trainable_weights =
+        # invoke the super.build() function as defined by keras authors
+        super(Self_attention_non_local_block, self).build(input_shape)
+        self.built = True
+
+    def call(self, input):
+        # extract shapes
+        batch_size, temporal_dim, height, width, channels = input.shape
+        # key flow
+        x = self.key_conv(input)
+        output_key_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
+        # query flow
+        x = self.query_conv(input)
+        output_query_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
+        output_query_conv_transpose = tf.transpose(output_query_conv, perm=[0, 2, 1])
+        # value flow
+        x = self.value_conv(input)
+        output_value_conv = tf.keras.layers.Reshape((-1, tf.keras.backend.int_shape(x)[-1]))(x)
+        # matrix multiplication for query and key
+        multiplicated_key_query = tf.keras.layers.Dot(axes=(2, 1))([output_key_conv, output_query_conv_transpose])
+        # softmax for obtained matrix
+        softmax_output = tf.keras.layers.Softmax()(multiplicated_key_query)
+        # multiply value by obtained softmax matrix
+        output_value = tf.keras.layers.Dot(axes=(2, 1))([softmax_output, output_value_conv])
+        # reshape
+        output = tf.keras.layers.Reshape((height, width,
+                                          tf.keras.backend.int_shape(output_value)[-1]))(output_value)
+        # apply output 1x1x1 conv
+        output = self.output_conv(output)
+        return output
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1], input_shape[2], self.output_channels)
+
+
+
 
 
 if __name__=="__main__":
