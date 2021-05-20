@@ -187,7 +187,7 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
         self.num_label_types=num_label_types
         self.num_val_metric=num_metric_to_set_weights
         # save metric values across
-        self.metric_values=np.empty((0,self.num_label_types, len(self.metrics)))
+        self.metric_values=np.empty((0,len(self.metrics),self.num_label_types))
         # If logger is provided, all the metrics during training process will be written
         self.logger = logger
 
@@ -205,7 +205,7 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
         for metric_idx in range(len(self.metrics)):
             string_to_write += 'metric: %s\n'%self.metrics[metric_idx]
             for label_type_idx in range(self.num_label_types):
-                string_to_write += 'value_class_%i:%f\n' % (label_type_idx, metric_values[metric_idx][label_type_idx])
+                string_to_write += 'value_label_%i:%f\n' % (label_type_idx, metric_values[metric_idx][label_type_idx])
         print(string_to_write)
         # log it if logger is provided
         if self.logger is not None:
@@ -216,7 +216,7 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
         # TODO: write description
         metric_values = self.custom_recall_validation_with_generator()
         self.metric_values=np.append(self.metric_values,
-                                     np.array(metric_values).reshape((1,self.num_label_types, len(self.metrics))), axis=0)
+                                     np.array(metric_values).reshape((1,len(self.metrics),self.num_label_types )), axis=0)
         self.print_and_log_metrics(metric_values)
         # if evaluation_metric was chosen
         if self.num_val_metric is not None:

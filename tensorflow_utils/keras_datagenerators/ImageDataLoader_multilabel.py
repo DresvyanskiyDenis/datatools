@@ -129,14 +129,7 @@ class ImageDataLoader_multilabel(Sequence):
         # calculate the number of classes if it is not provided
         if self.num_classes is None:
             self.num_classes = self.paths_with_labels.iloc[:,1].unique().shape[0]
-        # check if provided len of prob_factors_for_each_class is the same as num_classes
-        if self.prob_factors_for_each_class is not None:
-            if len(self.prob_factors_for_each_class) != self.num_classes:
-                raise AttributeError('prob_factors_for_each_class should have num_classes elements. Got %i.' % len(
-                    self.prob_factors_for_each_class))
-        else:
-            # assign every factor to 1
-            self.prob_factors_for_each_class = tuple(1. for _ in range(self.num_classes))
+
 
     def _load_and_preprocess_batch(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
