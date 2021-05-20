@@ -9,6 +9,7 @@ from typing import Callable, Iterable, Tuple, List, Optional, Union, TextIO
 
 import tensorflow as tf
 import numpy as np
+from sklearn.metrics import accuracy_score, f1_score
 
 
 def get_reduceLRonPlateau_callback(monitoring_loss: str = 'val_loss', reduce_factor: float = 0.1,
@@ -85,7 +86,7 @@ class best_weights_setter_callback(tf.keras.callbacks.Callback):
         return self.evaluation_metric(total_ground_truth, total_predictions)
 
 
-class validation_with_generator_callback(tf.keras.callbacks.Callback):
+"""class validation_with_generator_callback(tf.keras.callbacks.Callback):
     # TODO: write description
 
     def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
@@ -166,7 +167,7 @@ class validation_with_generator_callback(tf.keras.callbacks.Callback):
             metric_values.append(metric_value)
         if self.evaluation_metric is not None:
             eval_metric_value = self.evaluation_metric(ground_truth, predictions)
-        return tuple(metric_values), eval_metric_value
+        return tuple(metric_values), eval_metric_value"""
 
 
 class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback):
@@ -174,7 +175,7 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
 
     def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
                  metrics: Tuple[Callable[[np.ndarray, np.ndarray], float]],
-                 num_label_types:int,
+                 num_label_types:int=1,
                  logger: Optional[TextIO] = None,
                  num_metric_to_set_weights: Optional[int] = None):
         super(validation_with_generator_callback_multilabel, self).__init__()
@@ -184,17 +185,14 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
         self.val_generator = val_generator
         self.metrics = metrics
         self.num_label_types=num_label_types
-        # check if evaluation metric was provided
-        if num_metric_to_set_weights is not None:
-            self.evaluation_metric = self.metrics[num_metric_to_set_weights]
-            self.metrics = tuple(metric for i, metric in enumerate(metrics) if i != num_metric_to_set_weights)
-        else:
-            self.evaluation_metric = None
+        self.num_val_metric=num_metric_to_set_weights
+        # save metric values across
+        self.metric_values=np.empty((0,self.num_label_types, len(self.metrics)))
         # If logger is provided, all the metrics during training process will be written
         self.logger = logger
 
     def on_train_begin(self, logs=None):
-        # Initialize the best as infinity.
+        # Initialize the best
         self.best = 0
 
     def on_epoch_begin(self, epoch, logs=None):
@@ -202,18 +200,12 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
             self.logger.write('Epoch number:%i ----------------------------------\n'%epoch)
 
 
-    def print_and_log_metrics(self, metric_values: Tuple[List[float], ...],
-                              eval_metric_value: Optional[List[float]] = None) -> None:
-
+    def print_and_log_metrics(self, metric_values: Tuple[List[float], ...]) -> None:
         string_to_write = ''
         for metric_idx in range(len(self.metrics)):
             string_to_write += 'metric: %s\n'%self.metrics[metric_idx]
             for label_type_idx in range(self.num_label_types):
                 string_to_write += 'value_class_%i:%f\n' % (label_type_idx, metric_values[metric_idx][label_type_idx])
-        if eval_metric_value is not None:
-            string_to_write += 'evaluation metric: %s\n'%self.evaluation_metric
-            for label_type_idx in range(self.num_label_types):
-                string_to_write+='value_class_%i:%f\n' % (label_type_idx, eval_metric_value[label_type_idx])
         print(string_to_write)
         # log it if logger is provided
         if self.logger is not None:
@@ -222,19 +214,27 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
 
     def on_epoch_end(self, epoch, logs=None):
         # TODO: write description
-        metric_values, eval_metric_value = self.custom_recall_validation_with_generator()
-        self.print_and_log_metrics(metric_values, eval_metric_value)
+        metric_values = self.custom_recall_validation_with_generator()
+        self.metric_values=np.append(self.metric_values,
+                                     np.array(metric_values).reshape((1,self.num_label_types, len(self.metrics))), axis=0)
+        self.print_and_log_metrics(metric_values)
         # if evaluation_metric was chosen
-        if self.evaluation_metric is not None:
-            eval_metric_value=np.array(eval_metric_value).mean()
+        if self.num_val_metric is not None:
+            eval_metric_value=np.array(metric_values[self.num_val_metric]).mean()
             if np.greater(eval_metric_value, self.best):
                 self.best = eval_metric_value
                 self.best_weights = self.model.get_weights()
 
     def on_train_end(self, logs=None):
         # TODO: write description
-        if self.evaluation_metric is not None:
+        if self.num_val_metric is not None:
             self.model.set_weights(self.best_weights)
+        # write best values of metrics
+        if self.logger:
+            self.logger.write('Best values:\n')
+            best_values=self.metric_values.max(axis=0)
+            self.print_and_log_metrics(best_values)
+            self.logger.close()
 
     def _get_ground_truth_and_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
@@ -247,33 +247,34 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
             total_ground_truth = np.append(total_ground_truth, np.array(y).argmax(axis=-1).T, axis=0)
         return total_ground_truth, total_predictions
 
-    def custom_recall_validation_with_generator(self) -> Tuple[Tuple[List[float], ...],
-                                                               Union[float, None]]:
+    def custom_recall_validation_with_generator(self) -> Tuple[List[float], ...]:
         # TODO: write description
         ground_truth, predictions = self._get_ground_truth_and_predictions()
         metric_values = []
-        eval_metric_value = None
         for metric_idx in range(len(self.metrics)):
             metric_value=[]
             for label_type_idx in range(self.num_label_types):
                 metric_value.append(self.metrics[metric_idx](ground_truth[:,label_type_idx],
                                                              predictions[:, label_type_idx]))
             metric_values.append(metric_value)
-        if self.evaluation_metric is not None:
-            eval_metric_value=[]
-            for label_type_idx in range(self.num_label_types):
-                eval_metric_value.append(self.evaluation_metric(ground_truth[:,label_type_idx],
-                                                                predictions[:,label_type_idx]))
-        return tuple(metric_values), eval_metric_value
+        return tuple(metric_values)
 
 
 if __name__ == '__main__':
-    a = get_annealing_LRreduce_callback(0.2, 0.1, 9)
     x = np.zeros((100, 100))
-    y = np.ones((100, 1))
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(100, activation='sigmoid', input_shape=(100,)))
-    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
-    model.compile(optimizer=tf.keras.optimizers.SGD(0.1), loss='binary_crossentropy')
-    model.fit(x, y, epochs=5, batch_size=50, callbacks=[a])
+    y_1 = np.ones((100, 2))
+    y_2 = np.ones((100, 2))
+    a = validation_with_generator_callback_multilabel(val_generator=iter(zip(x, [y_1, y_2])),
+                 metrics=(accuracy_score, f1_score),
+                 num_label_types=2,
+                 logger = open('results.txt', 'w'),
+                 num_metric_to_set_weights= 1)
+
+    input=tf.keras.Input((100,))
+    x=tf.keras.layers.Dense(100, activation='sigmoid')(input)
+    output_1 = tf.keras.layers.Dense(2, activation='softmax')(x)
+    output_2 = tf.keras.layers.Dense(2, activation='softmax')(x)
+    model=tf.keras.Model(inputs=[input], outputs=[output_1, output_2])
+    model.compile(optimizer=tf.keras.optimizers.SGD(0.001), loss='categorical_crossentropy')
+    model.fit(x, np.concatenate([y_1, y_2], axis=-1), epochs=5, batch_size=50, callbacks=[a])
     b = 1 + 2
