@@ -288,5 +288,28 @@ if __name__=="__main__":
     for i, w in enumerate(model.weights): print(i, w.name)
     model.fit(x,y, batch_size=10, epochs=5)
     model.save_weights('weights.h5')
+    a=model.predict(x[:10])
+    print('\n\n\n')
+
+
+    model1 = tf.keras.Sequential()
+    model1.add(tf.keras.layers.Input(input_shape))
+    model1.add(Non_local_block_multi_head(num_heads=4, output_channels=128,
+                                         head_output_channels=None,
+                                         downsize_factor=2))
+    model1.add(Non_local_block_multi_head(num_heads=4, output_channels=128,
+                                         head_output_channels=None,
+                                         downsize_factor=2))
+    """model.add(Self_attention_non_local_block(output_channels=128,
+                                             downsize_factor=2, mode='spatial'))"""
+    model1.add(tf.keras.layers.Flatten())
+    model1.add(tf.keras.layers.Reshape((-1, 1)))
+    model1.add(tf.keras.layers.GlobalAveragePooling1D())
+    model1.add(tf.keras.layers.Flatten())
+    model1.load_weights('weights.h5')
+    model1.compile(optimizer=tf.keras.optimizers.Adam(0.001), loss='mse')
+    b=model1.predict(x[:10])
+
+    print(np.concatenate([a,b], axis=1))
 
 
