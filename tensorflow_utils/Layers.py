@@ -13,7 +13,8 @@ class Non_local_block_multi_head(tf.keras.layers.Layer):
 
     def __init__(self, num_heads:int,  output_channels:int,
                  head_output_channels:Optional[int]=None,
-                 downsize_factor:Optional[int]=None, **kwargs):
+                 downsize_factor:Optional[int]=None,
+                 shortcut_connection:bool=True, **kwargs):
         self.num_heads=num_heads
         if head_output_channels is None:
             self.head_output_channels=output_channels//num_heads
@@ -25,6 +26,7 @@ class Non_local_block_multi_head(tf.keras.layers.Layer):
             self.downsize_factor=downsize_factor
         self.heads=[]
         self.output_channels=output_channels
+        self.shortcut_connection=shortcut_connection
         super(Non_local_block_multi_head, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -36,7 +38,7 @@ class Non_local_block_multi_head(tf.keras.layers.Layer):
         # invoke build() function for every head to construct them
         [head.build(input_shape) for head in self.heads]
         # construct output convolution and invoke its build() function
-        self.output_conv=tf.keras.layers.Conv1D(self.output_channels, kernel_initializer='he_normal',
+        self.output_conv=tf.keras.layers.Conv2D(self.output_channels, kernel_initializer='he_normal',
                                                  kernel_size=1, padding='same',use_bias=False)
         with tf.name_scope(name="multi_head_attention_output_conv"):
             self.output_conv.build((input_shape[0],input_shape[1],input_shape[2],self.head_output_channels*len(self.heads)))
@@ -45,6 +47,16 @@ class Non_local_block_multi_head(tf.keras.layers.Layer):
         for head_idx in range(self.num_heads):
             self._trainable_weights = self._trainable_weights + self.heads[head_idx].trainable_weights
         self._trainable_weights = self._trainable_weights+self.output_conv.trainable_weights
+
+        # construct shortcut connection if needed and output number of channels differs from input number
+        if self.shortcut_connection:
+            if list(input_shape)[-1]!=self.output_channels:
+                self.shortcut_conv=tf.keras.layers.Conv2D(self.output_channels, kernel_initializer='he_normal',
+                                                 kernel_size=1, padding='same',use_bias=False)
+                with tf.name_scope(name="multi_head_attention_shortcut_connection_conv"):
+                    self.shortcut_conv.build(
+                        (input_shape))
+                self._trainable_weights=self._trainable_weights+self.shortcut_conv.trainable_weights
 
         # invoke the super.build() function as defined by keras authors
         super(Non_local_block_multi_head, self).build(input_shape)
@@ -57,6 +69,13 @@ class Non_local_block_multi_head(tf.keras.layers.Layer):
         concat_layer=tf.keras.layers.concatenate(head_outputs, axis=-1)
         # apply conv layer to concatenated outputs to get needed output size of filters at the end of layer
         output=self.output_conv(concat_layer)
+        # apply shortcut connection if needed
+        if self.shortcut_connection:
+            if input.shape[-1]!=self.output_channels:
+                shortcut=self.shortcut_conv(input)
+            else:
+                shortcut=input
+            output=tf.keras.layers.Add()([shortcut, output])
         return output
 
     def compute_output_shape(self, input_shape):
