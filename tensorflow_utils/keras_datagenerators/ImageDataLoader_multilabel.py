@@ -164,10 +164,10 @@ class ImageDataLoader_multilabel(Sequence):
         for idx_filename in range(filenames.shape[0]):
             filename = filenames[idx_filename]
             result_data[idx_filename] = result[filename]
-        """# one-hot-label encoding
+        # one-hot-label encoding
         for label_type_idx in range(len(self.class_columns)):
             result_labels[:, label_type_idx] = np.eye(self.num_classes)[
-                labels[:, label_type_idx].reshape((-1,)).astype('int32')]"""
+                labels[:, label_type_idx].reshape((-1,)).astype('int32')]
         # mixup
         if self.mixup is not None:
             result_data, result_labels = self._mixup(result_data, result_labels)
@@ -240,6 +240,8 @@ class ImageDataLoader_multilabel(Sequence):
         # TODO: write description
         data, labels = self._load_and_preprocess_batch(index)
         labels=[labels[:,i] for i in range(labels.shape[1])]
+        # convert to sigmoid format
+        labels=[label.argmax(axis=-1) for label in labels]
         if self.preprocess_function is not None:
             data = self.preprocess_function(data)
         return (data, labels)
