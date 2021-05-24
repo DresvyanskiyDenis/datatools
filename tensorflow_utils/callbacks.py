@@ -5,7 +5,7 @@ TODO: add description
 """
 
 from functools import partial
-from typing import Callable, Iterable, Tuple, List, Optional, Union, TextIO
+from typing import Callable, Iterable, Tuple, List, Optional, Union, TextIO, Dict
 
 import tensorflow as tf
 import numpy as np
@@ -169,25 +169,24 @@ class best_weights_setter_callback(tf.keras.callbacks.Callback):
             eval_metric_value = self.evaluation_metric(ground_truth, predictions)
         return tuple(metric_values), eval_metric_value"""
 
-
-class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback):
+class validation_with_generator_callback_multioutput_same_labeltype(tf.keras.callbacks.Callback):
     # TODO: write description
 
     def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
                  metrics: Tuple[Callable[[np.ndarray, np.ndarray], float]],
-                 num_label_types:int=1,
+                 num_outputs: int = 1,
                  logger: Optional[TextIO] = None,
                  num_metric_to_set_weights: Optional[int] = None):
-        super(validation_with_generator_callback_multilabel, self).__init__()
+        super(validation_with_generator_callback_multioutput_same_labeltype, self).__init__()
         # best_weights to store the weights at which the minimum UAR occurs.
         self.best_weights = None
         # generator to iterate on it on every end of epoch
         self.val_generator = val_generator
         self.metrics = metrics
-        self.num_label_types=num_label_types
-        self.num_val_metric=num_metric_to_set_weights
+        self.num_val_metric = num_metric_to_set_weights
+        self.num_outputs=num_outputs
         # save metric values across
-        self.metric_values=np.empty((0,len(self.metrics),self.num_label_types))
+        self.metric_values = np.empty((0, len(self.metrics), self.num_outputs))
         # If logger is provided, all the metrics during training process will be written
         self.logger = logger
 
@@ -197,13 +196,12 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
 
     def on_epoch_begin(self, epoch, logs=None):
         if self.logger is not None:
-            self.logger.write('Epoch number:%i ----------------------------------\n'%epoch)
-
+            self.logger.write('Epoch number:%i ----------------------------------\n' % epoch)
 
     def print_and_log_metrics(self, metric_values: Tuple[List[float], ...]) -> None:
         string_to_write = ''
         for metric_idx in range(len(self.metrics)):
-            string_to_write += 'metric: %s\n'%self.metrics[metric_idx]
+            string_to_write += 'metric: %s\n' % self.metrics[metric_idx]
             for label_type_idx in range(self.num_label_types):
                 string_to_write += 'value_label_%i:%f\n' % (label_type_idx, metric_values[metric_idx][label_type_idx])
         print(string_to_write)
@@ -215,12 +213,14 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
     def on_epoch_end(self, epoch, logs=None):
         # TODO: write description
         metric_values, weights_for_class = self.custom_recall_validation_with_generator()
-        self.metric_values=np.append(self.metric_values,
-                                     np.array(metric_values).reshape((1,len(self.metrics),self.num_label_types )), axis=0)
+        self.metric_values = np.append(self.metric_values,
+                                       np.array(metric_values).reshape((1, len(self.metrics), self.num_outputs)),
+                                       axis=0)
         self.print_and_log_metrics(metric_values)
         # if evaluation_metric was chosen
         if self.num_val_metric is not None:
-            eval_metric_value=(np.array(metric_values[self.num_val_metric])*np.array(weights_for_class.values())).sum()
+            eval_metric_value = (
+                        np.array(metric_values[self.num_val_metric]) * np.array(weights_for_class.values())).sum()
             if np.greater(eval_metric_value, self.best):
                 self.best = eval_metric_value
                 self.best_weights = self.model.get_weights()
@@ -232,14 +232,14 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
         # write best values of metrics
         if self.logger:
             self.logger.write('Best values:\n')
-            best_values=self.metric_values.max(axis=0)
+            best_values = self.metric_values.max(axis=0)
             self.print_and_log_metrics(best_values)
             self.logger.close()
 
     def _get_ground_truth_and_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
-        total_predictions = np.empty((0,self.num_label_types))
-        total_ground_truth = np.empty((0,self.num_label_types))
+        total_predictions = np.empty((0, self.num_outputs))
+        total_ground_truth = np.empty((0, self.num_outputs))
         for x, y in self.val_generator:
             predictions = np.array(self.model.predict(x))
             predictions = predictions.T
@@ -247,19 +247,19 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
             total_ground_truth = np.append(total_ground_truth, np.array(y).T, axis=0)
         return total_ground_truth, total_predictions
 
-    def custom_recall_validation_with_generator(self) -> Tuple[List[float], ...]:
+    def custom_recall_validation_with_generator(self) -> Tuple[Tuple[List[float], ...], Dict[int, float]]:
         # TODO: write description
         ground_truth, predictions = self._get_ground_truth_and_predictions()
-        weights_for_class=dict((i, ground_truth[:,i].sum()/ground_truth.shape[0]) for i in range(ground_truth.shape[1]))
+        weights_for_class = dict(
+            (i, ground_truth[:, i].sum() / ground_truth.shape[0]) for i in range(ground_truth.shape[1]))
         metric_values = []
         for metric_idx in range(len(self.metrics)):
-            metric_value=[]
+            metric_value = []
             for label_type_idx in range(self.num_label_types):
-                metric_value.append(self.metrics[metric_idx](ground_truth[:,label_type_idx],
+                metric_value.append(self.metrics[metric_idx](ground_truth[:, label_type_idx],
                                                              predictions[:, label_type_idx]))
             metric_values.append(metric_value)
         return tuple(metric_values), weights_for_class
-
 
 if __name__ == '__main__':
     x = np.zeros((100, 100))
