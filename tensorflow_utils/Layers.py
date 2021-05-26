@@ -325,7 +325,7 @@ class Self_attention_non_local_block(tf.keras.layers.Layer):
         # attention mechanism
         output_value=self.non_local_block_without_shortcut(input)
         # shortcut connection
-        if self.output_channels != list(input_shape)[-1]:
+        if self.output_channels != list(input.shape)[-1]:
             shortcut_connection=self.shortcut_conv(input)
         else:
             shortcut_connection=input
