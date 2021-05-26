@@ -174,7 +174,7 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
     # TODO: write description
 
     def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
-                 metrics: Tuple[Callable[[np.ndarray, np.ndarray], float]],
+                 metrics: Tuple[Callable[[np.ndarray, np.ndarray], float], ...],
                  num_label_types:int=1,
                  logger: Optional[TextIO] = None,
                  num_metric_to_set_weights: Optional[int] = None):
