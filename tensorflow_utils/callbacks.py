@@ -224,6 +224,7 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
             if np.greater(eval_metric_value, self.best):
                 self.best = eval_metric_value
                 self.best_weights = self.model.get_weights()
+                self.model.save_weights(r'results\model_weights.h5')
 
     def on_train_end(self, logs=None):
         # TODO: write description
