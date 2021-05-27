@@ -202,7 +202,7 @@ class VideoSequenceLoader(Sequence):
         results = dict(results)
         # relocate images from dict to numpy array
         image_shape = results[filenames[0]].shape
-        image_sequences = np.zeros((self.batch_size, self.num_frames_in_seq) + image_shape, dtype='uint8')
+        image_sequences = np.zeros((labels.shape[0], self.num_frames_in_seq) + image_shape, dtype='uint8')
         filenames = np.array(filenames).reshape((-1, self.num_frames_in_seq))
         for batch_idx in range(filenames.shape[0]):
             for frame_idx in range(filenames.shape[1]):
@@ -211,7 +211,7 @@ class VideoSequenceLoader(Sequence):
         if self.preprocess_function is not None:
             image_sequences = image_sequences.reshape((-1,) + image_shape)
             image_sequences = self.preprocess_function(image_sequences)
-            image_sequences = image_sequences.reshape((self.batch_size, self.num_frames_in_seq) + image_shape)
+            image_sequences = image_sequences.reshape((labels.shape[0], self.num_frames_in_seq) + image_shape)
         # clear RAM
         del results
         return image_sequences, labels
