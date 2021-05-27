@@ -15,7 +15,7 @@ import numpy as np
 from tensorflow_utils.keras_datagenerators.ImageAugmentor import ImageAugmentor
 
 
-class ImageDataLoader(Sequence):
+class VideoSequenceLoader(Sequence):
     """TODO:write description"""
     horizontal_flip: float
     vertical_flip: float
@@ -40,7 +40,7 @@ class ImageDataLoader(Sequence):
     pool: multiprocessing.Pool
 
     def __init__(self, paths_with_labels: pd.DataFrame,
-                 batch_size: int, num_frames_in_seq: int, proportion_of_intersection: int,
+                 batch_size: int, num_frames_in_seq: int, proportion_of_intersection: float,
                  preprocess_function: Optional[Callable] = None,
                  num_classes: Optional[int] = None,
                  horizontal_flip: Optional[float] = None, vertical_flip: Optional[float] = None,
@@ -139,12 +139,15 @@ class ImageDataLoader(Sequence):
         self.sequences = self._divide_dataframe_on_sequences(self.paths_with_labels, self.num_frames_in_seq, step)
 
     def _divide_dataframe_on_sequences(self, dataframe: pd.DataFrame, seq_length: int, step: int) -> List[pd.DataFrame]:
-        unique_filenames = dataframe.unique().to_numpy()
+        unique_filenames = np.unique(dataframe['filename'])
         # TODO: implement dividing whole dataframe on sequences
         sequences = []
         for unique_filename in unique_filenames:
             df_to_cut = dataframe[dataframe['filename'] == unique_filename]
-            cut_df = self._divide_dataframe_on_list_of_seq(df_to_cut, seq_length, step)
+            try:
+                cut_df = self._divide_dataframe_on_list_of_seq(df_to_cut, seq_length, step)
+            except AttributeError:
+                continue
             sequences = sequences + cut_df
         return sequences
 
@@ -152,6 +155,7 @@ class ImageDataLoader(Sequence):
         pd.DataFrame]:
         sequences = []
         if dataframe.shape[0] < seq_length:
+            # TODO: create your own exception
             raise AttributeError('The length of dataframe is less than seq_length. '
                                  'Dataframe length:%i, seq_length:%i' % (dataframe.shape[0], seq_length))
         num_sequences = int(np.ceil((dataframe.shape[0] - seq_length) / step + 1))
@@ -169,14 +173,13 @@ class ImageDataLoader(Sequence):
         sequences_to_load = self.sequences[idx * self.batch_size:(idx + 1) * self.batch_size]
         # concatenate selected sequences to load them
         concatenated_df = pd.concat(sequences_to_load, ignore_index=True)
-        # form filenames for loading images
-        filenames = concatenated_df['filename'] + concatenated_df['frame_num'].astype('str')
-        filenames = np.array(filenames).reshape((-1, self.num_frames_in_seq))
         # form labels
         labels = np.array(concatenated_df['class']).reshape((-1, self.num_frames_in_seq))
+        # form filenames for loading images
+        filenames = concatenated_df['filename'] + '_'+concatenated_df['frame_num'].astype('str')+'.jpg'
         # load and augment if needed all images by filenames using multiprocessing
         processes = []
-        for filename in filenames.reshape((-1,)):
+        for filename in filenames:
             processes.append(self.pool.apply_async(ImageAugmentor.load_and_preprocess_one_image,
                                                    args=(filename,
                                                          self.horizontal_flip,
@@ -200,6 +203,7 @@ class ImageDataLoader(Sequence):
         # relocate images from dict to numpy array
         image_shape = results[filenames[0]].shape
         image_sequences = np.zeros((self.batch_size, self.num_frames_in_seq) + image_shape, dtype='uint8')
+        filenames = np.array(filenames).reshape((-1, self.num_frames_in_seq))
         for batch_idx in range(filenames.shape[0]):
             for frame_idx in range(filenames.shape[1]):
                 image_sequences[batch_idx, frame_idx] = results[filenames[batch_idx, frame_idx]]
@@ -218,7 +222,7 @@ class ImageDataLoader(Sequence):
         return labels
 
     def _sequence_to_one_transformation(self, labels:np.ndarray)->np.ndarray:
-        labels=mode(labels, axis=-1)[0].reshape((-1,1))
+        labels=mode(labels, axis=1)[0].reshape((-1,1))
         return labels
 
     def on_epoch_end(self):
