@@ -121,7 +121,7 @@ class VideoSequenceLoader(Sequence):
                                  'representing the probability of applying such augmentation technique.')
         if self.num_frames_in_seq <= 0 or type(self.num_frames_in_seq) != int:
             raise AttributeError('Parameter num_frames_in_seq should be positive integer number.')
-        if self.proportion_of_intersection < 0 or self.proportion_of_intersection >= 1:
+        if self.proportion_of_intersection < 0 or self.proportion_of_intersection > 1:
             raise AttributeError('Parameter proportion_of_intersection should be float number between 0 and 1.')
         # create a pool of workers to do multiprocessing during loading and preprocessing
         self.pool = multiprocessing.Pool(self.num_workers)
