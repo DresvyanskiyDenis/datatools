@@ -41,7 +41,7 @@ def weighted_categorical_crossentropy(weights:np.ndarray):
 def categorical_focal_loss(alpha, gamma=2.):
     """
     Softmax version of focal loss.
-    author: https://github.com/umbertogriffo
+    Author: https://github.com/umbertogriffo
     When there is a skew between different categories/labels in your data set, you can try to apply this function as a
     loss.
            m
