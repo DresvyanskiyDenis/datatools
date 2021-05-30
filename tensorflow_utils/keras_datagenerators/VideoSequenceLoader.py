@@ -6,7 +6,6 @@ TODO: write description of module
 import multiprocessing
 import random
 from typing import Optional, Callable, Tuple, List
-
 from scipy.stats import mode
 from tensorflow.keras.utils import Sequence
 import pandas as pd
