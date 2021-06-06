@@ -9,7 +9,7 @@ from typing import Callable, Iterable, Tuple, List, Optional, Union, TextIO
 
 import tensorflow as tf
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 
 
 def get_reduceLRonPlateau_callback(monitoring_loss: str = 'val_loss', reduce_factor: float = 0.1,
@@ -224,18 +224,20 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
             if np.greater(eval_metric_value, self.best):
                 self.best = eval_metric_value
                 self.best_weights = self.model.get_weights()
-                self.model.save_weights(r'results\model_weights.h5')
+                self.best_epoch=epoch
+                #self.model.save_weights(r'results\model_weights.h5')
 
     def on_train_end(self, logs=None):
         # TODO: write description
         if self.num_val_metric is not None:
             self.model.set_weights(self.best_weights)
+            self.logger.write("\n epoch:%i" % self.best_epoch)
+            self.logger.close()
         # write best values of metrics
         if self.logger:
             self.logger.write('Best values:\n')
             best_values=self.metric_values.max(axis=0)
             self.print_and_log_metrics(best_values)
-            self.logger.close()
 
     def _get_ground_truth_and_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
@@ -245,12 +247,17 @@ class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback)
             predictions = np.array(self.model.predict(x))
             predictions = predictions.argmax(axis=-1)[...,np.newaxis]
             total_predictions = np.append(total_predictions, predictions, axis=0)
-            total_ground_truth = np.append(total_ground_truth, np.array(y).argmax(axis=-1)[...,np.newaxis], axis=0)
+            total_ground_truth = np.append(total_ground_truth, np.array(y).argmax(axis=-1).squeeze()[...,np.newaxis], axis=0)
         return total_ground_truth, total_predictions
 
     def custom_recall_validation_with_generator(self) -> Tuple[List[float], ...]:
         # TODO: write description
         ground_truth, predictions = self._get_ground_truth_and_predictions()
+        print(confusion_matrix(ground_truth[:,0],
+                                                             predictions[:, 0]))
+        self.logger.write(np.array2string(confusion_matrix(ground_truth[:,0],
+                                                             predictions[:, 0])))
+        self.logger.write('\n')
         metric_values = []
         for metric_idx in range(len(self.metrics)):
             metric_value=[]
