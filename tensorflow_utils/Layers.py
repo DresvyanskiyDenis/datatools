@@ -102,7 +102,7 @@ class _Self_attention_non_local_block_without_shortcut_connection(tf.keras.layer
                     see __init__ description
         :param kwargs:
         """
-        if mode not in ('spatial', 'spatio-temporal'):
+        if mode not in ('1D','spatial', 'spatio-temporal'):
             raise AttributeError('Mode can be either \'spatial\' or \'spatio-temporal\'. Got %s.'%mode)
         self.mode=mode
         self.relative_pos_enc=relative_position_encoding
@@ -119,7 +119,10 @@ class _Self_attention_non_local_block_without_shortcut_connection(tf.keras.layer
         # input_shape is either BxTxHxWxC or BxHxWxC
         # where B- batch_size, T - number of consecutive frames, H - height of image (feature map), W - width, C - number of channels
         # create convolutions for query, key, value and output
-        if self.mode=="spatial":
+        if self.mode=="1D":
+            conv_layer = tf.keras.layers.Conv1D
+            batch_size, width, channels = input_shape
+        elif self.mode=="spatial":
             conv_layer=tf.keras.layers.Conv2D
             batch_size, height, width, channels = input_shape
         else:
@@ -183,7 +186,10 @@ class _Self_attention_non_local_block_without_shortcut_connection(tf.keras.layer
 
     def call(self, input):
         # extract shapes
-        if self.mode=='spatial':
+        if self.mode=='1D':
+            batch_size, width, channels = input.shape
+            output_shape = (width, channels // self.downsize_factor)
+        elif self.mode=='spatial':
             batch_size, height, width, channels = input.shape
             output_shape=(height, width, channels//self.downsize_factor)
         else:
