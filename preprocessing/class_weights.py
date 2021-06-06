@@ -26,7 +26,7 @@ def get_class_weights_Effective_Number_of_Samples(labels:np.ndarray, beta:float)
     # normalize it to sum of weights = 1
     weights=weights/np.sum(weights)
     # convert it to dict
-    weights={(i, weights[i]) for i in range(weights.shape[0])}
+    weights=dict((i, weights[i]) for i in range(weights.shape[0]))
     return weights
 
 
