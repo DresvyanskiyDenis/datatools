@@ -1,27 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Utils for working with OpenFace library
+
+Module contains functions for using OpenFace lib.
+OpenFace:https://github.com/TadasBaltrusaitis/OpenFace
+
+List of functions:
+
+    * extract_openface_FAU_from_images_in_dir - runs OpenFace lib to extract FAU from all images located in provided directory.
 """
-TODO: write description of module
-"""
-
-import shutil
-from typing import Optional
-
-import pandas as pd
-import numpy as np
-import subprocess
-import os
-
 __author__ = "Denis Dresvyanskiy"
 __copyright__ = "Copyright 2021"
 __credits__ = ["Denis Dresvyanskiy"]
 __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
+import shutil
+from typing import Optional
+import pandas as pd
+import subprocess
+import os
 
 
-def extract_openface_FAU_from_images_in_dir(path_to_dir:str, path_to_extractor:str)->Optional[pd.DataFrame]:
-    # TODO: write description
+def extract_openface_FAU_from_images_in_dir(path_to_dir:str, path_to_extractor:str)->pd.DataFrame:
+    """Runs OpenFace toolkit to extract Facial Action Units from all images located in directory.
+
+    :param path_to_dir: str
+            path to directory with images
+    :param path_to_extractor: str
+            path to the toolkit (.exe file), which will be run via python command line
+    :return: Optional[pd.DataFrame]
+            DataFrame with results of the extraction (FAUs). All paths to the images will be saved.
+    """
     tmp_dir='tmp_dir'
     # check if output_dir exists
     if not os.path.exists(tmp_dir):
@@ -56,4 +66,3 @@ if __name__=="__main__":
     path_to_output=r'E:\Databases\DAiSEE\extracted_openface_features'
     path_to_extractor= '../../OpenFace/FaceLandmarkImg.exe'
     features=extract_openface_FAU_from_images_in_dir(path_to_dir, path_to_extractor)
-    a=1+2
