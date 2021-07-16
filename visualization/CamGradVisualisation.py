@@ -1,13 +1,27 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Visualize the gradients of neural network via CamGrad visualisation.
+
+Module contains class, which performs GradCam visualisation for neural networks (implemented in Tensorflow)
+CamGrad: https://arxiv.org/abs/1610.02391
+Implementation of the functions taken from keras implementations: https://keras.io/examples/vision/grad_cam/
+
+List of classes:
+    * GradCAMVisualiser - Performs GradCam visualisation using static method perform_and_save_gradcam()
 """
-TODO: write description of module
-"""
+__author__ = "Denis Dresvyanskiy"
+__copyright__ = "Copyright 2021"
+__credits__ = ["Denis Dresvyanskiy"]
+__maintainer__ = "Denis Dresvyanskiy"
+__email__ = "denis.dresvyanskiy@uni-ulm.de"
+
 import os
 import re
 from typing import Optional, Callable, Tuple
 
-import tensorflow as tf
 import numpy as np
-from PIL import Image
+import tensorflow as tf
+from PIL.Image import Image
 from matplotlib import cm
 
 from preprocessing.data_normalizing_utils import VGGFace2_normalization
@@ -16,7 +30,13 @@ from tensorflow_utils.models.CNN_models import get_EMO_VGGFace2
 
 
 class GradCAMVisualiser():
-    #TODO: write description
+    """
+        Methods:
+            * _make_gradcam_heatmap - creates gradcam heatmap
+            * _save_gradcam_image - saves created gradcam heatmap as image
+            * perform_and_save_gradcam - static method, which combines two formet methods to perform and save gradcam heatmap
+                and save it in provided directory.
+    """
 
     def _make_gradcam_heatmap(self, img_array:np.ndarray, model:tf.keras.Model, layer_name:str,
                              pred_index:Optional[int]=None)->np.ndarray:
