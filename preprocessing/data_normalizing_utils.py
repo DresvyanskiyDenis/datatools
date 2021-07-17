@@ -8,7 +8,11 @@ List of functions:
     * transform_data_with_scaler - transforms supplied data with provided scaler
     * normalize_min_max_data - normalizes/transforms supplied data using MinMax normalization and provides trained
     scaler, if it is needed.
-    # TODO: add new functions to description
+    * z_normalization - apply z-normalization to data
+    * l2_normalization - applies l2-normalization to data
+    * power_normalization - applies power-normalization to data (https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html)
+    * image_scaling_to_unit_range - scales pixels to range [0,1]
+    * VGGFace2_normalization - applies normalization, used in VggFace2 work
 """
 from typing import Tuple, Optional, Union
 import numpy as np
@@ -155,13 +159,23 @@ def power_normalization(data:np.ndarray, return_scaler:bool=False,
     return data
 
 def image_scaling_to_unit_range(img:np.ndarray)->np.ndarray:
-    # TODO: write description
+    """Scales pixel values to range [0, 1]
+
+    :param img: np.ndarray
+            3D array, which represents image.
+    :return: np.ndarray
+            Scaled array.
+    """
     return img/255.
 
 def VGGFace2_normalization(img:np.ndarray)->np.ndarray:
+    """Applies normalization to the image, as it did in https://arxiv.org/abs/1710.08092
+    https://github.com/WeidiXie/Keras-VGGFace2-ResNet50
+
+    :param img: np.ndarray
+            3D array, which represents image.
+    :return: np.ndarray
+            Normalized array
+    """
     img = img[:, :, ::-1] - vgg_face2_mean
     return img
-
-
-if __name__=="__main__":
-    pass
