@@ -1,9 +1,22 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Contains utils for visualisation of confusion matrices.
+
+List of functions:
+
+    * plot_and_save_confusion_matrix - plots and saves in provided directory the confusion matrix.
+
 """
-TODO: write description of module
-"""
+__author__ = "Denis Dresvyanskiy"
+__copyright__ = "Copyright 2021"
+__credits__ = ["Denis Dresvyanskiy"]
+__maintainer__ = "Denis Dresvyanskiy"
+__email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 
 import os
+from typing import List
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -12,8 +25,25 @@ from sklearn.metrics import confusion_matrix
 
 
 
-def plot_and_save_confusion_matrix(y_true, y_pred, name_labels, path_to_save:str='confusion_matrix', name_filename:str='cm.png', title:str=''):
-    #TODO: write description of function
+def plot_and_save_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, name_labels:List[str],
+                                   path_to_save:str='confusion_matrix', name_filename:str='cm.png', title:str='')->None:
+    """THis function firstly plots and then saves the confusion matrix by provided path.
+       Note that you should pass y_true and y_pred as 1-D np.ndarrays.
+
+    :param y_true: np.ndarray
+            1-D array with ground truth labels
+    :param y_pred: np.ndarray
+            1-D array with predictions from model
+    :param name_labels: List[str,...]
+            List of names of classes
+    :param path_to_save: str
+            Path for saving confusion matrix
+    :param name_filename: str
+            Name of the file, which will be saved
+    :param title: str
+            Title of the confusion matrix
+    :return: None
+    """
     c_m = confusion_matrix(y_true, y_pred)
     conf_matrix = pd.DataFrame(c_m, name_labels, name_labels)
 
