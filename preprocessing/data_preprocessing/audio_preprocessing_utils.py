@@ -22,7 +22,9 @@ List of functions:
     extracting cut sequence on subwindows and extracts defined features within these subwindows. Extracted features then
      combine (concatenate) across feature axis. Currently the supported features are ('EGEMAPS', 'HLD')
     * cut_data_on_chunks - cut provided sequence on chunks (windows). The data can be either 1-d or 2-d np.ndarray.
-    TODO: add new functions to list
+    * extract_polynomial_coefficients_from_2d_window - calculated defined polynomial coefficients from 2D window (sequence).
+    * extract_statistics_from_2d_window - calculates defined statistics (e. g. mean, std) for provided 2D window (sequence).
+
 """
 
 from typing import List, Union, Tuple, Optional
@@ -295,12 +297,22 @@ def cut_data_on_chunks(data: np.ndarray, chunk_length: int, window_step: int) ->
 
 
 def extract_polynomial_coefficients_from_2d_window(window: np.ndarray, order: int):
-    # TODO: add description
+    """Calculates polynomial coefficients from provided 2D window for all features
+       (means that coefficients will be calculated along axis=0).
+       For example, if we have a window with 3 features window=(num_steps, 3), 3 coefficients will be calculated.
+
+    :param window: np.ndarray
+            2D numpy array, which represents the window 2D sequence.
+    :param order: int
+            the order of the polynomial coefficient to be calculated.
+    :return: np.ndarray
+            2D numpy array consisted of coefficients for each feature along axis=0
+    """
     coefficients = []
     x = np.linspace(0, 1, window.shape[0])
     for feature_idx in range(window.shape[1]):
         y = window[:, feature_idx]
-        coeffs = polynomial.polyfit(x, y, deg=order)[order]
+        coeffs = np.polyfit(x, y, deg=order)[order]
         coefficients.append(coeffs)
     coefficients = np.array(coefficients)
     return coefficients
@@ -340,11 +352,3 @@ def extract_statistics_from_2d_window(window: np.ndarray,
     result_statistics = np.concatenate(result_statistics, axis=0)
     result_statistics = result_statistics[..., np.newaxis]
     return result_statistics
-
-
-if __name__ == '__main__':
-    path = r'E:\Databases\SEWA\Original\audio\SEW1101.wav'
-    sr, data = load_wav_file(path)
-    extracted_LLDs = cut_data_on_chunks(data, 48000, 24000)
-    print(extracted_LLDs)
-    extracted_HLDs = extract_subwindow_EGEMAPS_from_audio_sequence(extracted_LLDs[0], sr, 0.1, 0.05)
