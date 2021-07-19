@@ -8,18 +8,17 @@ List of functions:
     * extract_frames_from_all_videos_in_dir - extracts image frames from all videofiles located in probided directory.
 """
 
-import os
-import re
-from typing import Optional
-
-import cv2
-
-
 __author__ = "Denis Dresvyanskiy"
 __copyright__ = "Copyright 2021"
 __credits__ = ["Denis Dresvyanskiy"]
 __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
+
+import os
+import re
+from typing import Optional
+
+import cv2
 
 
 def extract_frames_from_videofile(input_path:str, output_path:str, every_n_frame:Optional[int]=None)->None:
