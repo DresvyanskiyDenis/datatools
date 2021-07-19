@@ -1,15 +1,36 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Provides functions for class weighting. Works only for categorical/integer classes.
+
+List of functions:
+
+    * get_class_weights_Effective_Number_of_Samples - gives class weights by using Effective Number Of Samples (https://arxiv.org/pdf/1901.05555.pdf)
+
 """
-    # TODO: add description
-"""
-from typing import Dict, Union
+
+__author__ = "Denis Dresvyanskiy"
+__copyright__ = "Copyright 2021"
+__credits__ = ["Denis Dresvyanskiy"]
+__maintainer__ = "Denis Dresvyanskiy"
+__email__ = "denis.dresvyanskiy@uni-ulm.de"
+
+
+from typing import Dict
 
 import numpy as np
-import pandas as pd
 
 
 def get_class_weights_Effective_Number_of_Samples(labels:np.ndarray, beta:float)->Dict[int, float]:
+    """Calculates the class weights by method "Effective Number of Samples".
+    link: https://arxiv.org/pdf/1901.05555.pdf
+
+    :param labels: np.ndarray
+            1D numpy array with integer labels
+    :param beta: float
+            parameter of the Effective Number of Samples
+    :return: Dict[int, float]
+            Class weights in Dict[class_num->class_weight]
+    """
     # https://arxiv.org/pdf/1901.05555.pdf
     if len(labels.shape)!=1:
         raise AttributeError('Passed labels should be 1-dimensional.')
@@ -29,10 +50,3 @@ def get_class_weights_Effective_Number_of_Samples(labels:np.ndarray, beta:float)
     weights=dict((i, weights[i]) for i in range(weights.shape[0]))
     return weights
 
-
-
-
-if __name__=="__main__":
-    labels=np.array([3, 1, 3, 1, 1, 1, 1, 1, 0, 0, 0, 2])
-    weights=get_class_weights_Effective_Number_of_Samples(labels, 0.99)
-    print(weights)
