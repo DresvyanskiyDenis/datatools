@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-TODO: write description of module
+"""Contains functions for video preprocessing.
+
+List of functions:
+
+    * extract_frames_from_videofile - extracts image frames from provided videofile.
+    * extract_frames_from_all_videos_in_dir - extracts image frames from all videofiles located in probided directory.
 """
 
 import os
+import re
 from typing import Optional
 
 import cv2
-import re
+
 
 __author__ = "Denis Dresvyanskiy"
 __copyright__ = "Copyright 2021"
@@ -18,7 +23,16 @@ __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 
 def extract_frames_from_videofile(input_path:str, output_path:str, every_n_frame:Optional[int]=None)->None:
-    # TODO: add description
+    """Extracts frames from videofile. To extract not all frames, but every n, specify the parameter every_n_frame.
+
+    :param input_path: str
+            path to the videofile.
+    :param output_path: str
+            path to the directory, where extracted frames will be saved.
+    :param every_n_frame: int
+            specify this parameter, if you need to extract only every n frame.
+    :return: None
+    """
     videofile=cv2.VideoCapture(input_path)
     # check if videofile was opened:
     if videofile is None or not videofile.isOpened():
@@ -46,13 +60,10 @@ def extract_frames_from_videofile(input_path:str, output_path:str, every_n_frame
             current_filename = video_filename + str(currentframe) + '.jpg'
             # writing the extracted images
             cv2.imwrite(os.path.join(output_path,video_filename, video_filename+'_frames', current_filename), frame)
-            # increasing counter so that it will
-            # show how many frames are created
         else:
             break
     # write meta data of videofile
-    with open(os.path.join(output_path,video_filename, "%s_%s.txt"%(video_filename, 'metadata'))
-            , "w") as metadata:
+    with open(os.path.join(output_path,video_filename, "%s_%s.txt"%(video_filename, 'metadata')), "w") as metadata:
         metadata.write('filename:%s\n'
                        'frame_rate:%f\n'%(video_filename+"."+file_extention, video_frame_rate))
     # Release all space and windows once done
@@ -61,7 +72,17 @@ def extract_frames_from_videofile(input_path:str, output_path:str, every_n_frame
 
 
 def extract_frames_from_all_videos_in_dir(input_dir:str, output_dir:str, every_n_frame:Optional[int]=None)-> None:
-    # TODO: add description
+    """Extracts frames from all videofiles located in input_dir.
+    To extract not all frames, but every n, specify the parameter every_n_frame.
+
+    :param input_dir: str
+            path to the directory with videofiles.
+    :param output_dir: str
+            path to the directory, where extracted frames will be saved.
+    :param every_n_frame: int
+            specify this parameter, if you need to extract only every n frame.
+    :return: None
+    """
     absolute_paths_to_videos=[]
     # walk through all the subdirectories and find all the videofiles and their absolute paths
     for root, dirs, files in os.walk(input_dir):
@@ -76,9 +97,3 @@ def extract_frames_from_all_videos_in_dir(input_dir:str, output_dir:str, every_n
         extract_frames_from_videofile(input_path=absolute_path_to_video,
                                       output_path=output_dir, every_n_frame=every_n_frame)
 
-
-
-if __name__ == '__main__':
-    input_path=r'D:\Databases\DAiSEE\DAiSEE\DataSet\Train'
-    output_path=r'D:\Databases\DAiSEE\frames'
-    extract_frames_from_all_videos_in_dir(input_path, output_path, every_n_frame=5)
