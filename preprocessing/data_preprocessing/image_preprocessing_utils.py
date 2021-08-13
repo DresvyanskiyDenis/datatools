@@ -3,8 +3,23 @@
 """Contains functions for video preprocessing.
 
 List of functions:
+    * load_image - loads the image using Pillow lib.
+    * load_batch_of_images - uses load_image function to load batch of images.
+    * save_image - saves image using Pillow lib.
+    * resize_image - resizes image according to given new size.
+    * show_image - shows image on the display.
+    * shear_image - shears image using Skicit-image and provided parameters.
+    * rotate_image - rotates image using Skicit-image and provided parameters.
+    * flip_image - flips image horizontally or vertically.
+    * shift_image - shifts image, making shifted area black.
+    * change_brightness - changes the brightness of image.
+    * zoom_image - zooms image, making it bigger or smaller.
+    * channel_random_noise - adds randomly distributed noise to chosen channel.
+    * crop_image - crops image according to provided bounding box.
+    * blur_image - blurs image according to provided factor.
+    * get_image_with_worse_quality - worsens image, making it smaller and then the same size again.
+    * scale_img_to_0_1 - scales the image pixel values to 0..1 range.
 
-    * TODO: list of function
 """
 
 __author__ = "Denis Dresvyanskiy"
@@ -21,7 +36,7 @@ from scipy import ndimage
 from skimage import transform, exposure
 
 
-def load_image(path:str)-> np.ndarray:
+def load_image(path: str) -> np.ndarray:
     """Loads image using Pillow library.
         https://pillow.readthedocs.io/en/stable/
 
@@ -33,7 +48,8 @@ def load_image(path:str)-> np.ndarray:
     with Image.open(path) as im:
         return np.array(im)
 
-def load_batch_of_images(paths:Tuple[str,...])-> np.ndarray:
+
+def load_batch_of_images(paths: Tuple[str, ...]) -> np.ndarray:
     """Loads batch of images, paths of which are in the passed Tuple.
        Returns it as  4D array (num_images, height, width, channels).
        It is assumed that all images have the same size.
@@ -43,17 +59,17 @@ def load_batch_of_images(paths:Tuple[str,...])-> np.ndarray:
     :return: np.ndarray
             Loaded images as 4D np.ndarray (num_images, height, width, channels)
     """
-    img=load_image(paths[0])
-    img_shape=img.shape
-    images_array=np.zeros(((len(paths),)+img_shape))
-    images_array[0]=img
+    img = load_image(paths[0])
+    img_shape = img.shape
+    images_array = np.zeros(((len(paths),) + img_shape))
+    images_array[0] = img
     for i in range(1, len(paths)):
-        img=load_image(paths[i])
-        images_array[i]=img
+        img = load_image(paths[i])
+        images_array[i] = img
     return images_array.astype('uint8')
 
 
-def save_image(img:np.ndarray, path_to_output:str)->None:
+def save_image(img: np.ndarray, path_to_output: str) -> None:
     """Saves image using Pillow lib.
 
     :param img: np.ndarray
@@ -65,7 +81,8 @@ def save_image(img:np.ndarray, path_to_output:str)->None:
     img = Image.fromarray(img)
     img.save(path_to_output)
 
-def resize_image(img:np.ndarray, new_size:Tuple[int, int])-> np.ndarray:
+
+def resize_image(img: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
     """Resizes image using Pillow lib.
 
     :param img: np.ndarray
@@ -75,11 +92,12 @@ def resize_image(img:np.ndarray, new_size:Tuple[int, int])-> np.ndarray:
     :return: np.ndarray
             Resized image as 3D np.ndarray (height, width, channels)
     """
-    img=Image.fromarray(img)
-    img=img.resize(new_size)
+    img = Image.fromarray(img)
+    img = img.resize(new_size)
     return np.array(img)
 
-def show_image(img:np.ndarray)->None:
+
+def show_image(img: np.ndarray) -> None:
     """Shows image using Pillow lib.
 
     :param img: np.ndarray
@@ -89,7 +107,7 @@ def show_image(img:np.ndarray)->None:
     Image.fromarray(img).show()
 
 
-def shear_image(img:np.ndarray, shear_factor:float)->np.ndarray:
+def shear_image(img: np.ndarray, shear_factor: float) -> np.ndarray:
     """Shears image.
     Skicit-image is used: https://scikit-image.org/
 
@@ -104,9 +122,10 @@ def shear_image(img:np.ndarray, shear_factor:float)->np.ndarray:
     afine_tf = transform.AffineTransform(shear=shear_factor)
     # Apply transform to image data
     modified_img = transform.warp(img, inverse_map=afine_tf)
-    return (modified_img*255.).astype('uint8')
+    return (modified_img * 255.).astype('uint8')
 
-def rotate_image(img:np.ndarray, rotation_angle:int)->np.ndarray:
+
+def rotate_image(img: np.ndarray, rotation_angle: int) -> np.ndarray:
     """Rotates image.
     Skicit-image is used: https://scikit-image.org/
 
@@ -117,10 +136,11 @@ def rotate_image(img:np.ndarray, rotation_angle:int)->np.ndarray:
     :return: np.ndarray
             Rotated image as 3D np.ndarray
     """
-    modified_image=transform.rotate(img, rotation_angle)*255.
+    modified_image = transform.rotate(img, rotation_angle) * 255.
     return modified_image.astype('uint8')
 
-def flip_image(img:np.ndarray, flip_type:str)->np.ndarray:
+
+def flip_image(img: np.ndarray, flip_type: str) -> np.ndarray:
     """Flips image (horizontally or vertically).
 
     :param img: np.ndarray
@@ -130,15 +150,16 @@ def flip_image(img:np.ndarray, flip_type:str)->np.ndarray:
     :return: np.ndarray
             Flipped image as 3D np.ndarray
     """
-    if not flip_type in ('horizontal','vertical'):
+    if not flip_type in ('horizontal', 'vertical'):
         raise AttributeError('Flip_type can be either \'horizontal\' or \'vertical\'. Got: %s' % flip_type)
     if flip_type == 'horizontal':
-        modified_image=img[:,::-1]
+        modified_image = img[:, ::-1]
     else:
-        modified_image=img[::-1,:]
+        modified_image = img[::-1, :]
     return modified_image
 
-def shift_image(img:np.ndarray, shift_vector:Tuple[float, float])->np.ndarray:
+
+def shift_image(img: np.ndarray, shift_vector: Tuple[float, float]) -> np.ndarray:
     """Shifts image on certain distance.
 
     :param img: np.ndarray
@@ -154,7 +175,8 @@ def shift_image(img:np.ndarray, shift_vector:Tuple[float, float])->np.ndarray:
     shifted = shifted.astype(img.dtype)
     return shifted
 
-def change_brightness(img:np.ndarray, brightness_factor:float)->np.ndarray:
+
+def change_brightness(img: np.ndarray, brightness_factor: float) -> np.ndarray:
     """Changes the brightness of the image.
 
     :param img: np.ndarray
@@ -164,10 +186,11 @@ def change_brightness(img:np.ndarray, brightness_factor:float)->np.ndarray:
     :return: np.ndarray
             Changed image as 3D np.ndarray
     """
-    modified_image = exposure.adjust_gamma(img, gamma=1+brightness_factor, gain=1)
+    modified_image = exposure.adjust_gamma(img, gamma=1 + brightness_factor, gain=1)
     return modified_image
 
-def zoom_image(img:np.ndarray, zoom_factor:float)->np.ndarray:
+
+def zoom_image(img: np.ndarray, zoom_factor: float) -> np.ndarray:
     """Zooms image by provided factor. Basically, this function makes image bigger or smaller.
 
     :param img: np.ndarray
@@ -177,10 +200,11 @@ def zoom_image(img:np.ndarray, zoom_factor:float)->np.ndarray:
     :return: np.ndarray
             Zoomed image as 3D np.ndarray
     """
-    result_image=ndimage.zoom(img, (zoom_factor, zoom_factor, 1))
+    result_image = ndimage.zoom(img, (zoom_factor, zoom_factor, 1))
     return result_image
 
-def channel_random_noise(img:np.ndarray, num_channel:int, std:float)->np.ndarray:
+
+def channel_random_noise(img: np.ndarray, num_channel: int, std: float) -> np.ndarray:
     """Adds random gaussian noise (with defined std) to the chosen color channel.
 
     :param img: np.ndarray
@@ -192,13 +216,14 @@ def channel_random_noise(img:np.ndarray, num_channel:int, std:float)->np.ndarray
     :return: np.ndarray
             Changed image as 3D np.ndarray
     """
-    image_size=img.shape[:2]
-    noise=np.random.normal(scale=std,size=image_size)
-    modified_image=img.copy().astype('float32')
-    modified_image[:,:,num_channel]+=noise
+    image_size = img.shape[:2]
+    noise = np.random.normal(scale=std, size=image_size)
+    modified_image = img.copy().astype('float32')
+    modified_image[:, :, num_channel] += noise
     return modified_image.astype('uint8')
 
-def crop_image(img:np.ndarray, bbox:Tuple[int,int,int,int])->np.ndarray:
+
+def crop_image(img: np.ndarray, bbox: Tuple[int, int, int, int]) -> np.ndarray:
     """Crops provided bounding box from the image, making area black.
 
     :param img: np.ndarray
@@ -208,13 +233,14 @@ def crop_image(img:np.ndarray, bbox:Tuple[int,int,int,int])->np.ndarray:
     :return: np.ndarray
             Changed image as 3D np.ndarray
     """
-    x0,y0,x1,y1 = bbox
-    if x0<0 or x1>img.shape[1] or y0<0 or y1>img.shape[0]:
+    x0, y0, x1, y1 = bbox
+    if x0 < 0 or x1 > img.shape[1] or y0 < 0 or y1 > img.shape[0]:
         raise AttributeError("Some coordinates of bbox are negative or greater than "
-                             "the image size. Provided bbox:%s"%bbox)
+                             "the image size. Provided bbox:%s" % bbox)
     return img[y0:y1, x0:x1]
 
-def blur_image(img:np.ndarray, sigma:float=3)->np.ndarray:
+
+def blur_image(img: np.ndarray, sigma: float = 3) -> np.ndarray:
     """Blues image. Scipy are used.
     https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html
 
@@ -225,10 +251,11 @@ def blur_image(img:np.ndarray, sigma:float=3)->np.ndarray:
     :return: np.ndarray
             Changed image as 3D np.ndarray
     """
-    modified_image=ndimage.gaussian_filter(img, sigma=(sigma, sigma, 0))
+    modified_image = ndimage.gaussian_filter(img, sigma=(sigma, sigma, 0))
     return modified_image
 
-def get_image_with_worse_quality(img:np.ndarray, rescaling_factor:float)->np.ndarray:
+
+def get_image_with_worse_quality(img: np.ndarray, rescaling_factor: float) -> np.ndarray:
     """Worsens image quality by some factor. It is done by firstly scaling image down (decreasing height and width)
        and then up (increasing back to the first values).
 
@@ -239,11 +266,12 @@ def get_image_with_worse_quality(img:np.ndarray, rescaling_factor:float)->np.nda
     :return: np.ndarray
             Changed image as 3D np.ndarray
     """
-    modified_image=transform.rescale(img, (rescaling_factor, rescaling_factor, 1), anti_aliasing=False)
-    modified_image=transform.resize(modified_image, img.shape[:2])
-    return (modified_image*255).astype('uint8')
+    modified_image = transform.rescale(img, (rescaling_factor, rescaling_factor, 1), anti_aliasing=False)
+    modified_image = transform.resize(modified_image, img.shape[:2])
+    return (modified_image * 255).astype('uint8')
 
-def scale_img_to_0_1(img:np.ndarray)->np.ndarray:
+
+def scale_img_to_0_1(img: np.ndarray) -> np.ndarray:
     """Rescales pixel values to the [0,1].
 
     :param img: np.ndarray
@@ -251,14 +279,14 @@ def scale_img_to_0_1(img:np.ndarray)->np.ndarray:
     :return: np.ndarray
             Changed image as 3D np.ndarray
     """
-    modified_image=img/255.
+    modified_image = img / 255.
     return modified_image
 
 
 if __name__ == "__main__":
-    img=load_image(r'C:\Users\Professional\Desktop\Article_pictures\AffWild2\Angry_1.jpg')
+    img = load_image(r'C:\Users\Professional\Desktop\Article_pictures\AffWild2\Angry_1.jpg')
     show_image(img)
     print(img.shape)
-    img=get_image_with_worse_quality(img, 10)
+    img = get_image_with_worse_quality(img, 10)
     show_image(img)
     print(img.shape)
