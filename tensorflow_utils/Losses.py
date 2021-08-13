@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Contains different loss functions for tensorflow.keras framework.
+
+List of functions:
+    * weighted_categorical_crossentropy - returns class weighted categorical crossentropy.
+    * categorical_focal_loss - return multi-class focal loss.
+
 """
-TODO: add description
-"""
+
+__author__ = "Denis Dresvyanskiy"
+__copyright__ = "Copyright 2021"
+__credits__ = ["Denis Dresvyanskiy"]
+__maintainer__ = "Denis Dresvyanskiy"
+__email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 import numpy as np
 import tensorflow.keras.backend as K
