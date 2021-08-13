@@ -29,7 +29,6 @@ __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 from typing import Tuple
-
 from PIL import Image
 import numpy as np
 from scipy import ndimage
