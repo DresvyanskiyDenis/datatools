@@ -10,6 +10,13 @@ List of classes:
     * Self_attention_non_local_block - he self-attention layer with positional encoding (if needed).
 
 """
+
+__author__ = "Denis Dresvyanskiy"
+__copyright__ = "Copyright 2021"
+__credits__ = ["Denis Dresvyanskiy"]
+__maintainer__ = "Denis Dresvyanskiy"
+__email__ = "denis.dresvyanskiy@uni-ulm.de"
+
 from typing import Optional
 
 import tensorflow as tf

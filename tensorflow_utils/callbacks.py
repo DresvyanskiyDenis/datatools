@@ -1,38 +1,82 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-TODO: add description
+"""Contains the functions for keras callbacks creation.
+
+List of functions:
+
+    * get_reduceLRonPlateau_callback - creates a reduceLRonPlateau keras callback with defined parameters.
+    * get_LRreduce_callback - creates a LearningRateScheduler keras callback based on the provided Callable function.
+    * get_annealing_LRreduce_callback - creates a LearningRateScheduler, which imitates the annealing learning rate reduce.
+
+List of classes:
+
+    * best_weights_setter_callback - saves the weights of best model, monitoring the defined metric on validation generator.
 """
 
+__author__ = "Denis Dresvyanskiy"
+__copyright__ = "Copyright 2021"
+__credits__ = ["Denis Dresvyanskiy"]
+__maintainer__ = "Denis Dresvyanskiy"
+__email__ = "denis.dresvyanskiy@uni-ulm.de"
+
 from functools import partial
-from typing import Callable, Iterable, Tuple, List, Optional, Union, TextIO
+from typing import Callable, Iterable, Tuple
 
 import tensorflow as tf
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 
 
 def get_reduceLRonPlateau_callback(monitoring_loss: str = 'val_loss', reduce_factor: float = 0.1,
                                    num_patient_epochs: int = 10,
                                    min_lr: float = 0.) -> tf.keras.callbacks.ReduceLROnPlateau:
-    # TODO: write description
+    """ Creates the reduceLRonPlateau callback done before by keras library.
+    see: https://keras.io/api/callbacks/reduce_lr_on_plateau/
+
+    :param monitoring_loss: str
+            the name of loss to monitor.
+    :param reduce_factor: float
+            the factor on which the learning rate will be reduced after waiting defined epochs without improvements.
+    :param num_patient_epochs: int
+            the number of epochs before the learning rate will be reduced.
+    :param min_lr: float
+            the minimal value of the learning rate can be.
+    :return: tf.keras.callbacks.ReduceLROnPlateau
+            created callback for the tf.keras.Model
+    """
     callback = tf.keras.callbacks.ReduceLROnPlateau(monitor=monitoring_loss, factor=reduce_factor,
                                                     patience=num_patient_epochs, min_lr=min_lr)
     return callback
 
 
 def get_LRreduce_callback(scheduller: Callable[[int, float], float]) -> tf.keras.callbacks.LearningRateScheduler:
-    # TODO: write description
+    """ Creates a LearningRateScheduler keras callback based on the provided Callable function.
+    See: https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/LearningRateScheduler
+
+    :param scheduller: Callable[[int, float], float]
+            function, which takes current epoch and learning rate and returns a new learning rate
+    :return: tf.keras.callbacks.LearningRateScheduler
+            LearningRateScheduler
+    """
     callback = tf.keras.callbacks.LearningRateScheduler(scheduller)
     return callback
 
 
 def get_annealing_LRreduce_callback(highest_lr: float, lowest_lr: float,
                                     annealing_period: int) -> tf.keras.callbacks.LearningRateScheduler:
-    # TODO: write description
+    """Creates the annealing LRreduce callback based on the tf.keras.callbacks.LearningRateScheduler.
+
+    :param highest_lr: float
+            the highest value of the learning rate
+    :param lowest_lr: float
+            the lowest value of the learning rate
+    :param annealing_period: int
+            the number of epochs, on which the learning rate will be gradually decreased
+    :return: tf.keras.callbacks.LearningRateScheduler
+            The tf.keras.callbacks.LearningRateScheduler, which imitates the annealing learning rate reduce strategy
+    """
     learning_rates = np.linspace(start=highest_lr, stop=lowest_lr, num=annealing_period)
 
-    def get_lr_according_to_annealing_step(current_epoch: int, current_lr: float, learning_rates: np.ndarray) -> float:
+    def get_lr_according_to_annealing_step(current_epoch: int, learning_rates: np.ndarray) -> float:
         annealing_period = learning_rates.shape[0]
         idx_of_annealing_step = current_epoch % annealing_period
         return learning_rates[idx_of_annealing_step]
@@ -43,14 +87,21 @@ def get_annealing_LRreduce_callback(highest_lr: float, lowest_lr: float,
 
 
 class best_weights_setter_callback(tf.keras.callbacks.Callback):
-    """Calculates the recall score at the end of each training epoch and saves the best weights across all the training
-        process. At the end of training process, it will set weights of the model to the best found ones.
-        # TODO: write, which types of metric functions it supports
+    """Saves the weights of the best performed model with chosen metric.
+       Weights will be set at the end of training.
+
     """
 
     def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
                  evaluation_metric: Callable[[np.ndarray, np.ndarray], float]):
         super(best_weights_setter_callback, self).__init__()
+        """
+        :param val_generator: Iterable[Tuple[np.ndarray, np.ndarray]]
+            The generator, which returns the tuple of ()data, labels)
+        :param evaluation_metric: Callable[[np.ndarray, np.ndarray], float]
+            The function (metric), which takes Tuple of np.arrays (ground_truth, predictions) and gives the float value,
+            in the other words, the metric score (from 0 to 1).
+        """
         # best_weights to store the weights at which the minimum UAR occurs.
         self.best_weights = None
         # generator to iterate on it on every end of epoch
@@ -62,20 +113,41 @@ class best_weights_setter_callback(tf.keras.callbacks.Callback):
         self.best = 0
 
     def on_epoch_end(self, epoch, logs=None):
-        # TODO: write description
-        current_recall = self.custom_recall_validation_with_generator(self.val_generator, self.model)
+        """ Do defined action on the end of training epoch.
+
+        :param epoch: int
+                the current number of epoch.
+        :param logs:
+                logs to write and get from them information.
+        :return: None
+        """
+        current_recall = self.custom_validation_with_generator(self.val_generator, self.model)
         print('current validation %s:' % self.evaluation_metric, current_recall)
         if np.greater(current_recall, self.best):
             self.best = current_recall
             self.best_weights = self.model.get_weights()
 
     def on_train_end(self, logs=None):
-        # TODO: write description
+        """Do defined action on the end of training procedure.
+
+        :param logs:
+                logs to write and get from them information.
+        :return: None
+        """
         self.model.set_weights(self.best_weights)
 
-    def custom_recall_validation_with_generator(self, generator: Iterable[Tuple[np.ndarray, np.ndarray]],
+    def custom_validation_with_generator(self, generator: Iterable[Tuple[np.ndarray, np.ndarray]],
                                                 model: tf.keras.Model) -> float:
-        # TODO: write description
+        """ Evaluates the model with provided on initialization generator.
+            The chosen metric will be used for the evaluation.
+
+        :param generator: Iterable[Tuple[np.ndarray, np.ndarray]]
+                The generator, which returns the tuple of (data, labels)
+        :param model: tf.keras.Model
+                The keras model, which will be evaluated
+        :return: float
+                The value of the metric
+        """
         total_predictions = np.zeros((0,))
         total_ground_truth = np.zeros((0,))
         for x, y in generator:
@@ -85,204 +157,3 @@ class best_weights_setter_callback(tf.keras.callbacks.Callback):
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
         return self.evaluation_metric(total_ground_truth, total_predictions)
 
-
-"""class validation_with_generator_callback(tf.keras.callbacks.Callback):
-    # TODO: write description
-
-    def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
-                 metrics: Tuple[Callable[[np.ndarray, np.ndarray], float]],
-                 logger: Optional[TextIO] = None,
-                 num_metric_to_set_weights: Optional[int] = None):
-        super(validation_with_generator_callback, self).__init__()
-        # best_weights to store the weights at which the minimum UAR occurs.
-        self.best_weights = None
-        # generator to iterate on it on every end of epoch
-        self.val_generator = val_generator
-        self.metrics = metrics
-        # check if evaluation metric was provided
-        if num_metric_to_set_weights is not None:
-            self.evaluation_metric = self.metrics[num_metric_to_set_weights]
-            self.metrics = tuple(metric for i, metric in enumerate(metrics) if i != num_metric_to_set_weights)
-        else:
-            self.evaluation_metric = None
-        # If logger is provided, all the metrics during training process will be written
-        self.logger = logger
-
-    def on_train_begin(self, logs=None):
-        # Initialize the best as infinity.
-        self.best = 0
-
-    def on_epoch_begin(self, epoch, logs=None):
-        if self.logger is not None:
-            self.logger.write('Epoch number:%i ----------------------------------'%epoch)
-
-
-    def print_and_log_metrics(self, metric_values: Tuple[float, ...],
-                              eval_metric_value: Optional[float] = None) -> None:
-
-        string_to_write = ''
-        for metric_idx in range(len(self.metrics)):
-            string_to_write += 'metric: %s, value:%f\n' % (self.metrics[metric_idx], metric_values[metric_idx])
-        if eval_metric_value is not None:
-            string_to_write += 'evaluation metric: %s, value:%f' % (self.evaluation_metric, eval_metric_value)
-        print(string_to_write)
-        # log it if logger is provided
-        if self.logger is not None:
-            self.logger.write(string_to_write + '\n')
-
-    def on_epoch_end(self, epoch, logs=None):
-        # TODO: write description
-        metric_values, eval_metric_value = self.custom_recall_validation_with_generator()
-        self.print_and_log_metrics(metric_values, eval_metric_value)
-        # if evaluation_metric was chosen
-        if self.evaluation_metric is not None:
-            if np.greater(eval_metric_value, self.best):
-                self.best = eval_metric_value
-                self.best_weights = self.model.get_weights()
-
-    def on_train_end(self, logs=None):
-        # TODO: write description
-        if self.evaluation_metric is not None:
-            self.model.set_weights(self.best_weights)
-
-    def _get_ground_truth_and_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
-        # TODO: write description
-        total_predictions = np.zeros((0,))
-        total_ground_truth = np.zeros((0,))
-        for x, y in self.val_generator:
-            predictions = self.model.predict(x)
-            predictions = predictions.argmax(axis=-1).reshape((-1,))
-            total_predictions = np.append(total_predictions, predictions)
-            total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
-        return total_ground_truth, total_predictions
-
-    def custom_recall_validation_with_generator(self) -> Tuple[Tuple[float, ...],
-                                                               Union[float, None]]:
-        # TODO: write description
-        ground_truth, predictions = self._get_ground_truth_and_predictions()
-        metric_values = []
-        eval_metric_value = None
-        for metric_idx in range(len(self.metrics)):
-            metric_value = self.metrics[metric_idx](ground_truth, predictions)
-            metric_values.append(metric_value)
-        if self.evaluation_metric is not None:
-            eval_metric_value = self.evaluation_metric(ground_truth, predictions)
-        return tuple(metric_values), eval_metric_value"""
-
-
-class validation_with_generator_callback_multilabel(tf.keras.callbacks.Callback):
-    # TODO: write description
-
-    def __init__(self, val_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
-                 metrics: Tuple[Callable[[np.ndarray, np.ndarray], float], ...],
-                 num_label_types:int=1,
-                 logger: Optional[TextIO] = None,
-                 num_metric_to_set_weights: Optional[int] = None):
-        super(validation_with_generator_callback_multilabel, self).__init__()
-        # best_weights to store the weights at which the minimum UAR occurs.
-        self.best_weights = None
-        # generator to iterate on it on every end of epoch
-        self.val_generator = val_generator
-        self.metrics = metrics
-        self.num_label_types=num_label_types
-        self.num_val_metric=num_metric_to_set_weights
-        # save metric values across
-        self.metric_values=np.empty((0,len(self.metrics),self.num_label_types))
-        # If logger is provided, all the metrics during training process will be written
-        self.logger = logger
-
-    def on_train_begin(self, logs=None):
-        # Initialize the best
-        self.best = 0
-
-    def on_epoch_begin(self, epoch, logs=None):
-        if self.logger is not None:
-            self.logger.write('Epoch number:%i ----------------------------------\n'%epoch)
-
-
-    def print_and_log_metrics(self, metric_values: Tuple[List[float], ...]) -> None:
-        string_to_write = ''
-        for metric_idx in range(len(self.metrics)):
-            string_to_write += 'metric: %s\n'%self.metrics[metric_idx]
-            for label_type_idx in range(self.num_label_types):
-                string_to_write += 'value_label_%i:%f\n' % (label_type_idx, metric_values[metric_idx][label_type_idx])
-        print(string_to_write)
-        # log it if logger is provided
-        if self.logger is not None:
-            self.logger.write(string_to_write + '\n')
-            self.logger.flush()
-
-    def on_epoch_end(self, epoch, logs=None):
-        # TODO: write description
-        metric_values = self.custom_recall_validation_with_generator()
-        self.metric_values=np.append(self.metric_values,
-                                     np.array(metric_values).reshape((1,len(self.metrics),self.num_label_types )), axis=0)
-        self.print_and_log_metrics(metric_values)
-        # if evaluation_metric was chosen
-        if self.num_val_metric is not None:
-            eval_metric_value=np.array(metric_values[self.num_val_metric]).mean()
-            if np.greater(eval_metric_value, self.best):
-                self.best = eval_metric_value
-                self.best_weights = self.model.get_weights()
-                self.best_epoch=epoch
-                #self.model.save_weights(r'results\model_weights.h5')
-
-    def on_train_end(self, logs=None):
-        # TODO: write description
-        if self.num_val_metric is not None:
-            self.model.set_weights(self.best_weights)
-            self.logger.write("\n epoch:%i" % self.best_epoch)
-            self.logger.close()
-        # write best values of metrics
-        if self.logger:
-            self.logger.write('Best values:\n')
-            best_values=self.metric_values.max(axis=0)
-            self.print_and_log_metrics(best_values)
-
-    def _get_ground_truth_and_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
-        # TODO: write description
-        total_predictions = np.empty((0,self.num_label_types))
-        total_ground_truth = np.empty((0,self.num_label_types))
-        for x, y in self.val_generator:
-            predictions = np.array(self.model.predict(x))
-            predictions = predictions.argmax(axis=-1)[...,np.newaxis]
-            total_predictions = np.append(total_predictions, predictions, axis=0)
-            total_ground_truth = np.append(total_ground_truth, np.array(y).argmax(axis=-1).squeeze()[...,np.newaxis], axis=0)
-        return total_ground_truth, total_predictions
-
-    def custom_recall_validation_with_generator(self) -> Tuple[List[float], ...]:
-        # TODO: write description
-        ground_truth, predictions = self._get_ground_truth_and_predictions()
-        print(confusion_matrix(ground_truth[:,0],
-                                                             predictions[:, 0]))
-        self.logger.write(np.array2string(confusion_matrix(ground_truth[:,0],
-                                                             predictions[:, 0])))
-        self.logger.write('\n')
-        metric_values = []
-        for metric_idx in range(len(self.metrics)):
-            metric_value=[]
-            for label_type_idx in range(self.num_label_types):
-                metric_value.append(self.metrics[metric_idx](ground_truth[:,label_type_idx],
-                                                             predictions[:, label_type_idx]))
-            metric_values.append(metric_value)
-        return tuple(metric_values)
-
-
-if __name__ == '__main__':
-    x = np.zeros((100, 100))
-    y_1 = np.ones((100, 2))
-    y_2 = np.ones((100, 2))
-    a = validation_with_generator_callback_multilabel(val_generator=iter(zip(x, [y_1, y_2])),
-                 metrics=(accuracy_score, f1_score),
-                 num_label_types=2,
-                 logger = open('results.txt', 'w'),
-                 num_metric_to_set_weights= 1)
-
-    input=tf.keras.Input((100,))
-    x=tf.keras.layers.Dense(100, activation='sigmoid')(input)
-    output_1 = tf.keras.layers.Dense(2, activation='softmax')(x)
-    output_2 = tf.keras.layers.Dense(2, activation='softmax')(x)
-    model=tf.keras.Model(inputs=[input], outputs=[output_1, output_2])
-    model.compile(optimizer=tf.keras.optimizers.SGD(0.001), loss='categorical_crossentropy')
-    model.fit(x, np.concatenate([y_1, y_2], axis=-1), epochs=5, batch_size=50, callbacks=[a])
-    b = 1 + 2
