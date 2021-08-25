@@ -21,7 +21,7 @@ from typing import Optional, Callable, Tuple
 
 import numpy as np
 import tensorflow as tf
-from PIL.Image import Image
+from PIL import Image
 from matplotlib import cm
 
 from preprocessing.data_normalizing_utils import VGGFace2_normalization
