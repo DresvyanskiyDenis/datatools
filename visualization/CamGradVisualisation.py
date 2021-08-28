@@ -77,7 +77,7 @@ class GradCAMVisualiser():
 
 
 
-    def _save_gradcam_image(self, img_path:str, heatmap:np.ndarray, cam_path:str="cam.jpg", alpha:float=0.4)-> None:
+    def _save_gradcam_image(self, img_path:str, heatmap:np.ndarray, cam_path:str="cam.jpg", alpha:float=0.8)-> None:
         # function is partially taken from https://keras.io/examples/vision/grad_cam/
 
         # Load the original image
@@ -131,9 +131,10 @@ class GradCAMVisualiser():
 
 
 if __name__=='__main__':
-    path_to_model_weights=r'C:\Users\Dresvyanskiy\Desktop\Projects\EMOVGGFace_model\weights_0_66_37_affectnet_cat.h5'
-    img_path=r'C:\Users\Dresvyanskiy\Downloads\Telegram Desktop\choice_frame_attention_affecnet\AffWild2_v2\118\00293.jpg'
-    layer_name='add_15'
-    model=get_EMO_VGGFace2(path_to_model_weights)
+    path_to_model_weights = r'C:\Users\Professional\Desktop\Article_pictures\weights_0_66_37_affectnet_cat.h5'
+    img_path = r'C:\Users\Professional\Desktop\Article_pictures\AffWild2\Disgusted_3.jpg'
+    layer_name = 'activation_39'
+    model = get_EMO_VGGFace2(path_to_model_weights)
     model.summary()
-    GradCAMVisualiser.perform_and_save_gradcam(img_path, 'results', model, layer_name, preprocess_function=VGGFace2_normalization)
+    GradCAMVisualiser.perform_and_save_gradcam(img_path, 'results', model, layer_name,
+                                               preprocess_function=VGGFace2_normalization)
