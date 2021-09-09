@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-TODO: add description
-"""
-from typing import Tuple, List, Optional, Union
-import tensorflow as tf
+"""Contains the functions for building the tf.keras Dense models, without RNN and CNN lazers.
 
+List of functions:
+    * get_Dense_model - creates a Dense tf.keras Model according to the specified parameters.
+"""
+
+__author__ = "Denis Dresvyanskiy"
+__copyright__ = "Copyright 2021"
+__credits__ = ["Denis Dresvyanskiy"]
+__maintainer__ = "Denis Dresvyanskiy"
+__email__ = "denis.dresvyanskiy@uni-ulm.de"
+
+from typing import Tuple, Optional, Union
+import tensorflow as tf
 
 def get_Dense_model(input_shape:Tuple[int,...],
                     dense_neurons: Tuple[int,...],
@@ -14,7 +22,27 @@ def get_Dense_model(input_shape:Tuple[int,...],
                     regularization:Optional[tf.keras.regularizers.Regularizer]=None,
                     output_neurons: Union[Tuple[int,...], int] = 7,
                     activation_function_for_output:str='softmax') -> tf.keras.Model:
-    # TODO:write description
+    """Creates the tf.keras model with deliberate number of layers.
+
+    :param input_shape: Tuple[int,...]
+            The input shape of the model. Should be a Tuple with integer values.
+    :param dense_neurons: Tuple[int,...]
+            The number of neurons on each consecutive layers. Should be a Tuple with integer values.
+    :param activations: Union[str,Tuple[str,...]]
+            The activation functions of each layer presented in dense_neurons. If str, applies chosen activation
+            to all layers except of the last layer.
+    :param dropout: Optional[float]
+            If indicated, applies the dropout to every layer except of the final.
+    :param regularization: Optional[tf.keras.regularizers.Regularizer]
+            If indicated, applies the regularization to every layer except of the final.
+    :param output_neurons: Union[Tuple[int,...], int]
+            The number of the output neurons (in the last layer). If Tuple[int,...], creates several output layers with
+            the number of neurons presented in Tuple.
+    :param activation_function_for_output: str
+            The activation function for the output layer (layers).
+    :return: tf.keras.Model
+            The dense model created according to the specified parameters.
+    """
     input_layer=tf.keras.layers.Input(input_shape)
     # create first Dense layer
     if isinstance(activations, tuple): activation=activations[0]
@@ -40,7 +68,3 @@ def get_Dense_model(input_shape:Tuple[int,...],
         output_layers = [output_layers]
     model=tf.keras.Model(inputs=[input_layer], outputs=output_layers)
     return model
-
-
-if __name__=="__main__":
-    pass
