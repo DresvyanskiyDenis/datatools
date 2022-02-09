@@ -7,13 +7,12 @@ import wandb
 
 class WandB_LR_log_callback(tf.keras.callbacks.Callback):
 
-    def __init__(self, optimizer: tf.keras.optimizers.Optimizer):
+    def __init__(self):
         super(WandB_LR_log_callback, self).__init__()
-        self.optimizer = optimizer
 
     def on_epoch_end(self, epoch, logs):
-        lr = self.optimizer.learning_rate(self.optimizer.iterations)
-        wandb.log({"lr": lr}, step=epoch - 1)
+        lr = self.model.optimizer.learning_rate.numpy().flatten()[0]
+        wandb.log({"lr": lr}, commit=False)
 
 
 class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
@@ -30,7 +29,6 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         total_ground_truth = np.zeros((0,))
         for x, y in self.data_generator:
             predictions = self.model.predict(x)
-            print("prediction")
             predictions = predictions.argmax(axis=-1).reshape((-1,))
             total_predictions = np.append(total_predictions, predictions)
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
@@ -46,4 +44,4 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         # calculate all metrics using provided data_generator
         metric_values = self.calculate_metrics()
         # log them
-        wandb.log(metric_values, step=epoch - 1)
+        wandb.log(metric_values, commit=False)
