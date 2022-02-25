@@ -47,6 +47,7 @@ class ImageDataLoader(Sequence):
                  channel_random_noise: Optional[float] = None, bluring: Optional[float] = None,
                  worse_quality: Optional[float] = None,
                  mixup: Optional[float] = None,
+                 already_one_hot_encoded:bool = False,
                  prob_factors_for_each_class: Optional[Tuple[float, ...]] = None,
                  pool_workers: int = 4):
         # TODO: write description
@@ -67,6 +68,7 @@ class ImageDataLoader(Sequence):
         self.paths_with_labels = paths_with_labels
         self.batch_size = batch_size
         self.num_classes = num_classes
+        self.already_one_hot_encoded=already_one_hot_encoded
         self.preprocess_function = preprocess_function
         self.num_workers=pool_workers
         # check provided params
@@ -77,9 +79,6 @@ class ImageDataLoader(Sequence):
     def _check_provided_params(self):
         # TODO: write description
         # checking the provided DataFrame
-        if self.paths_with_labels.columns.to_list() != ['filename', 'class']:
-            raise AttributeError(
-                'DataFrame columns should be \'filename\' and \'class\'. Got %s.' % self.paths_with_labels.columns)
         if self.paths_with_labels.shape[0] == 0:
             raise AttributeError('DataFrame is empty.')
         # check if all provided variables are in the allowed range (usually, from 0..1 or bool)
@@ -123,7 +122,10 @@ class ImageDataLoader(Sequence):
         self.pool = multiprocessing.Pool(self.num_workers)
         # calculate the number of classes if it is not provided
         if self.num_classes is None:
-            self.num_classes = self.paths_with_labels['class'].unique().shape[0]
+            if self.already_one_hot_encoded:
+                self.num_classes = self.paths_with_labels.iloc[:,1:].shape[1]
+            else:
+                self.num_classes = self.paths_with_labels['class'].unique().shape[0]
         # check if provided len of prob_factors_for_each_class is the same as num_classes
         if self.prob_factors_for_each_class is not None:
             if len(self.prob_factors_for_each_class) != self.num_classes:
@@ -137,11 +139,15 @@ class ImageDataLoader(Sequence):
         # TODO: write description
         filenames = self.paths_with_labels['filename'].iloc[
                     idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
-        labels = self.paths_with_labels['class'].iloc[
-                 idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
+
+        if self.already_one_hot_encoded:
+            labels=self.paths_with_labels.iloc[idx * self.batch_size:(idx + 1) * self.batch_size, 1:].values
+        else:
+            labels = self.paths_with_labels['class'].iloc[idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
+
         results = []
         for filename_idx in range(filenames.shape[0]):
-            label=int(labels[filename_idx])
+            label=int(np.argmax(labels[filename_idx])) if self.already_one_hot_encoded else int(labels[filename_idx])
             results.append(self.pool.apply_async(ImageAugmentor.load_and_preprocess_one_image,
                                                  args=(filenames[filename_idx],
                                                        self.horizontal_flip * self.prob_factors_for_each_class[
@@ -160,24 +166,29 @@ class ImageDataLoader(Sequence):
                                                        self.bluring * self.prob_factors_for_each_class[label],
                                                        self.worse_quality * self.prob_factors_for_each_class[
                                                            label])))
+
         result = []
         for res in results:
             result.append(res.get())
         result = dict(result)
+
         # create batch output
         image_shape = result[filenames[0]].shape
-        result_data = np.zeros((labels.shape[0],) + image_shape)
-        result_labels = labels.reshape((-1, 1))
+        data = np.zeros((labels.shape[0],) + image_shape)
         for idx_filename in range(filenames.shape[0]):
             filename = filenames[idx_filename]
-            result_data[idx_filename] = result[filename]
+            data[idx_filename] = result[filename]
+
         # one-hot-label encoding
-        result_labels = np.eye(self.num_classes)[result_labels.reshape((-1,)).astype('int32')]
+        if not self.already_one_hot_encoded:
+            labels = labels.reshape((-1, 1))
+            labels = np.eye(self.num_classes)[labels.reshape((-1,)).astype('int32')]
+
         # mixup
         if self.mixup is not None:
-            result_data, result_labels = self._mixup(result_data, result_labels)
+            data, labels = self._mixup(data, labels)
 
-        return (result_data.astype('float32'), result_labels)
+        return (data.astype('float32'), labels)
 
     def _mixup(self, images: np.ndarray, labels: np.ndarray, alfa: float = 0.2):
         # TODO: write description
