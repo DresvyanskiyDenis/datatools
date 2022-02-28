@@ -1,3 +1,4 @@
+import gc
 from typing import Dict, Iterable, Tuple, Callable
 
 import tensorflow as tf
@@ -28,7 +29,7 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         total_predictions = np.zeros((0,))
         total_ground_truth = np.zeros((0,))
         for x, y in self.data_generator:
-            predictions = self.model.predict(x)
+            predictions = self.model.predict(x, batch_size=16)
             predictions = predictions.argmax(axis=-1).reshape((-1,))
             total_predictions = np.append(total_predictions, predictions)
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
@@ -37,7 +38,9 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         results = {}
         for key in self.metrics.keys():
             results[key] = self.metrics[key](total_ground_truth, total_predictions)
-        # done
+        # clear RAM
+        del total_predictions, total_ground_truth
+        gc.collect()
         return results
 
     def on_epoch_end(self, epoch, logs):
