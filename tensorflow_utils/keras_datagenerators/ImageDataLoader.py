@@ -119,7 +119,7 @@ class ImageDataLoader(Sequence):
             raise AttributeError('Parameter mixup should be float number between 0 and 1, '
                                  'representing the portion of images to be mixup applied.')
         # create a pool of workers to do multiprocessing during loading and preprocessing
-        self.pool = multiprocessing.Pool(self.num_workers, maxtasksperchild=int(np.round(self.batch_size/self.num_workers)+1))
+        self.pool = multiprocessing.Pool(self.num_workers, maxtasksperchild=int(np.round(self.batch_size/self.num_workers)*2))
         # calculate the number of classes if it is not provided
         if self.num_classes is None:
             if self.already_one_hot_encoded:
