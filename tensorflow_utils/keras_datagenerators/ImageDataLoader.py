@@ -188,6 +188,9 @@ class ImageDataLoader(Sequence):
         if self.mixup is not None:
             data, labels = self._mixup(data, labels)
 
+        # clear RAM
+        del results, result, filenames,
+
         return (data.astype('float32'), labels)
 
     def _mixup(self, images: np.ndarray, labels: np.ndarray, alfa: float = 0.2):
