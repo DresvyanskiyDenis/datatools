@@ -144,9 +144,6 @@ class ImageDataLoader(Sequence):
 
 
     def _load_and_preprocess_batch(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
-        # create a multiprocessing pool, if it is None and we call this function first time
-        if self.pool is None:
-            self._create_multiprocessing_pool(self.num_workers)
         # TODO: write description
         filenames = self.paths_with_labels['filename'].iloc[
                     idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
@@ -236,6 +233,7 @@ class ImageDataLoader(Sequence):
 
     def on_epoch_end(self):
         # TODO: write description
+        print("epoch end")
         # shuffle rows in dataframe
         self.paths_with_labels = self.paths_with_labels.sample(frac=1)
         # clear RAM and realise pools
@@ -246,6 +244,9 @@ class ImageDataLoader(Sequence):
 
     def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
+        # create a multiprocessing pool, if it is None and we call this function first time
+        if self.pool is None:
+            self._create_multiprocessing_pool(self.num_workers)
         data, labels = self._load_and_preprocess_batch(index)
         if self.preprocess_function is not None:
             data = self.preprocess_function(data)
