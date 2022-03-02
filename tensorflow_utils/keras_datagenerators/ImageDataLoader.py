@@ -119,6 +119,8 @@ class ImageDataLoader(Sequence):
         if self.mixup is not None and (self.mixup < 0 or self.mixup > 1):
             raise AttributeError('Parameter mixup should be float number between 0 and 1, '
                                  'representing the portion of images to be mixup applied.')
+        # create a self.pool variable
+        self.pool = None
         # calculate the number of classes if it is not provided
         if self.num_classes is None:
             if self.already_one_hot_encoded:
