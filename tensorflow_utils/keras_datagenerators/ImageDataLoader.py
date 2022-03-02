@@ -3,6 +3,7 @@
 """
 TODO: write description of module
 """
+import gc
 import multiprocessing
 from typing import Optional, Callable, Tuple
 
@@ -118,8 +119,6 @@ class ImageDataLoader(Sequence):
         if self.mixup is not None and (self.mixup < 0 or self.mixup > 1):
             raise AttributeError('Parameter mixup should be float number between 0 and 1, '
                                  'representing the portion of images to be mixup applied.')
-        # create a pool of workers to do multiprocessing during loading and preprocessing
-        self.pool = multiprocessing.Pool(self.num_workers, maxtasksperchild=int(np.round(self.batch_size/self.num_workers)*2))
         # calculate the number of classes if it is not provided
         if self.num_classes is None:
             if self.already_one_hot_encoded:
@@ -135,7 +134,19 @@ class ImageDataLoader(Sequence):
             # assign every factor to 1
             self.prob_factors_for_each_class = tuple(1. for _ in range(self.num_classes))
 
+    def _create_multiprocessing_pool(self, num_workers:int):
+        self.pool = multiprocessing.Pool(num_workers)
+
+    def _realise_multiprocessing_pool(self):
+        self.pool.close()
+        self.pool.join()
+        self.pool=None
+
+
     def _load_and_preprocess_batch(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
+        # create a multiprocessing pool, if it is None and we call this function first time
+        if self.pool is None:
+            self._create_multiprocessing_pool(self.num_workers)
         # TODO: write description
         filenames = self.paths_with_labels['filename'].iloc[
                     idx * self.batch_size:(idx + 1) * self.batch_size].values.flatten()
@@ -225,8 +236,13 @@ class ImageDataLoader(Sequence):
 
     def on_epoch_end(self):
         # TODO: write description
-        # just shuffle rows in dataframe
+        # shuffle rows in dataframe
         self.paths_with_labels = self.paths_with_labels.sample(frac=1)
+        # clear RAM and realise pools
+        if self.pool is not None:
+            self._realise_multiprocessing_pool()
+        gc.collect()
+
 
     def __getitem__(self, index) -> Tuple[np.ndarray, np.ndarray]:
         # TODO: write description
@@ -240,3 +256,9 @@ class ImageDataLoader(Sequence):
         num_steps = int(np.ceil(self.paths_with_labels.shape[0] / self.batch_size))
         return num_steps
 
+
+    def __del__(self):
+        # destructor
+        self._realise_multiprocessing_pool()
+        del self.paths_with_labels
+        gc.collect()
