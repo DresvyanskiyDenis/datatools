@@ -46,5 +46,11 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs):
         # calculate all metrics using provided data_generator
         metric_values = self.calculate_metrics()
+        print('val_metrics:', metric_values)
         # log them
-        wandb.log(metric_values, commit=False)
+        #wandb.log(metric_values, commit=False)
+        # clear multiprocessing Pool RAM if needed
+        if self.data_generator.pool is not None:
+            self.data_generator._realise_multiprocessing_pool()
+            print('validation pool cleaned')
+
