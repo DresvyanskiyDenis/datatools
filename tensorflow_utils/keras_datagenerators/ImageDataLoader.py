@@ -140,8 +140,11 @@ class ImageDataLoader(Sequence):
         self.pool = multiprocessing.Pool(num_workers)
 
     def _realise_multiprocessing_pool(self):
-        self.pool.close()
-        self.pool.join()
+        if self.pool is not None:
+            self.pool.close()
+            self.pool.join()
+            del self.pool
+        gc.collect()
         self.pool=None
 
 
@@ -235,7 +238,6 @@ class ImageDataLoader(Sequence):
 
     def on_epoch_end(self):
         # TODO: write description
-        print("epoch end")
         # shuffle rows in dataframe
         self.paths_with_labels = self.paths_with_labels.sample(frac=1)
         # clear RAM and realise pools
