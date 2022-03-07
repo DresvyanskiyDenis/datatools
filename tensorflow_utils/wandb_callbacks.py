@@ -29,7 +29,7 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         total_predictions = np.zeros((0,))
         total_ground_truth = np.zeros((0,))
         for x, y in self.data_generator:
-            predictions = self.model.predict(x, batch_size=16)
+            predictions = self.model.predict(x, batch_size=32)
             predictions = predictions.argmax(axis=-1).reshape((-1,))
             total_predictions = np.append(total_predictions, predictions)
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
@@ -48,7 +48,7 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         metric_values = self.calculate_metrics()
         print('val_metrics:', metric_values)
         # log them
-        #wandb.log(metric_values, commit=False)
+        wandb.log(metric_values, commit=False)
         # clear multiprocessing Pool RAM if needed
         if self.data_generator.pool is not None:
             self.data_generator._realise_multiprocessing_pool()
