@@ -56,7 +56,10 @@ def change_saturation_image(image, saturation_factor):
 
 @tf.function
 def worse_quality_image(image, min_quality, max_quality):
-    return tf.image.random_jpeg_quality(image, min_quality, max_quality)
+    result=tf.cast(image, dtype=tf.uint8)
+    result=tf.image.random_jpeg_quality(result, min_quality, max_quality)
+    result=tf.cast(result, dtype=tf.float32)
+    return result
 
 @tf.function
 def convert_to_grayscale_image(image):
@@ -66,17 +69,28 @@ def convert_to_grayscale_image(image):
 # The addition of the randomness to the augmentations
 
 @tf.function
-def random_rotate90_image(image, lbs):
-    # use augmentation if probability is less than generated one
-    return rotate90_image(image), lbs
+def random_rotate90_image(image, lbs, probability):
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+            lambda: (rotate90_image(image), lbs),
+            lambda: (image, lbs))
+    return result
 
 @tf.function
-def random_flip_vertical_image(image, lbs):
-    return flip_vertical_image(image), lbs
+def random_flip_vertical_image(image, lbs, probability):
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+            lambda: (flip_vertical_image(image), lbs),
+            lambda: (image, lbs))
+    return result
 
 @tf.function
-def random_flip_horizontal_image(image, lbs):
-    return flip_horizontal_image(image), lbs
+def random_flip_horizontal_image(image, lbs, probability):
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+                     lambda: (flip_horizontal_image(image), lbs),
+                     lambda: (image, lbs))
+    return result
 
 @tf.function
 def _crop_and_resize(image, crop_shape, result_shape):
@@ -86,35 +100,60 @@ def _crop_and_resize(image, crop_shape, result_shape):
 
 
 @tf.function
-def random_crop_image(image, lbs):
+def random_crop_image(image, lbs, probability):
     old_shape = tf.shape(image)[:2]
     # create shape of cropped image
     crop_height = tf.cast(tf.shape(image)[0], dtype=tf.float32) * tf.random.uniform(shape=(),minval=0.7, maxval=0.9)
     crop_width = tf.cast(tf.shape(image)[1], dtype=tf.float32) * tf.random.uniform(shape=(), minval=0.7, maxval=0.9)
     crop_shape = (crop_height, crop_width, tf.cast(tf.shape(image)[-1], dtype=tf.float32))
     crop_shape = tf.cast(crop_shape, dtype=tf.int32)
-    # crop image and resize it to the original size
-    return _crop_and_resize(image, crop_shape, old_shape), lbs
+
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+                     lambda: (_crop_and_resize(image, crop_shape, old_shape), lbs), # crop image and resize it to the original size
+                     lambda: (image, lbs))
+    return result
+
 
 @tf.function
-def random_change_brightness_image(image, lbs, min_max_delta=0.35):
+def random_change_brightness_image(image, lbs, probability, min_max_delta=0.35):
     delta=tf.random.uniform(shape=(), minval=-min_max_delta, maxval=min_max_delta)
-    return change_brightness_image(image, delta), lbs
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+                     lambda: (change_brightness_image(image, delta), lbs),
+                     lambda: (image, lbs))
+    return result
 
 @tf.function
-def random_change_contrast_image(image, lbs,  min_factor = 0.5, max_factor = 1.5):
+def random_change_contrast_image(image, lbs, probability, min_factor = 0.5, max_factor = 1.5):
     delta=tf.random.uniform(shape=(), minval=min_factor, maxval=max_factor)
-    return change_contrast_image(image, delta), lbs
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+                     lambda: (change_contrast_image(image, delta), lbs),
+                     lambda: (image, lbs))
+    return result
 
 @tf.function
-def random_change_saturation_image(image, lbs,  min_factor = 0.5, max_factor = 1.5):
+def random_change_saturation_image(image, lbs, probability, min_factor = 0.5, max_factor = 1.5):
     delta=tf.random.uniform(shape=(), minval=min_factor, maxval=max_factor)
-    return change_saturation_image(image, delta), lbs
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+                     lambda: (change_saturation_image(image, delta), lbs),
+                     lambda: (image, lbs))
+    return result
 
 @tf.function
-def random_worse_quality_image(image, lbs, min_factor = 25, max_factor = 99):
-    return worse_quality_image(image, min_factor, max_factor), lbs
+def random_worse_quality_image(image, lbs, probability, min_factor = 25, max_factor = 99):
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+                     lambda: (worse_quality_image(image, min_factor, max_factor), lbs),
+                     lambda: (image, lbs))
+    return result
 
 @tf.function
-def random_convert_to_grayscale_image(image, lbs):
-    return convert_to_grayscale_image(image), lbs
+def random_convert_to_grayscale_image(image, lbs, probability):
+    # use augmentation if generated probability is less than defined probability
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), probability),
+                     lambda: (convert_to_grayscale_image(image), lbs),
+                     lambda: (image, lbs))
+    return result
