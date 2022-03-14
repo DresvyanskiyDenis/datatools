@@ -106,45 +106,14 @@ def roll_prob_dice(barrier):
     return cond
 
 
-def main():
-    # params
-    augment = True
-    augment_prob = 0.1
-    augment_methods = [
-        random_rotate90_image,
-        random_flip_vertical_image,
-        random_flip_horizontal_image,
-        random_crop_image,
-        partial(random_change_brightness_image, min_max_delta=0.35),
-        partial(random_change_contrast_image, min_factor=0.5, max_factor=1.5),
-        partial(random_change_saturation_image, min_factor=0.5, max_factor=1.5),
-        partial(random_worse_quality_image, min_factor=25, max_factor=99),
-        random_convert_to_grayscale_image
-    ]
-    preprocessing_function = preprocess_image_VGGFace2
-    clip_value = False
-    batch_size = 32
-
-    train = data_load()
-    print(train)
-
-    dataset=get_tensorflow_generator(train,batch_size, augment, augment_prob, augment_methods, preprocessing_function,
-                                     clip_value)
-
-
-    model = create_model((224, 224, 3))
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy')
-    model.summary()
-
-    model.fit(x=dataset, epochs=10)
-
-
-if __name__ == '__main__':
-    main()
+def augment(x, y, augmentation_function):
+    result = tf.cond(tf.math.less(tf.random.uniform([], 0., 1.), 0.1),
+                     lambda: augmentation_function(x, y),
+                     lambda: x, y)
+    return result
 
 
 def get_tensorflow_generator(paths_and_labels: pd.DataFrame, batch_size: int, augmentation: bool = False,
-                             augmentation_prob: Optional[float] = None,
                              augmentation_methods: Optional[List[Tensorflow_Callable]] = None,
                              preprocessing_function: Optional[Tensorflow_Callable] = None,
                              clip_values: Optional[bool] = None) -> tf.data.Dataset:
@@ -159,7 +128,6 @@ def get_tensorflow_generator(paths_and_labels: pd.DataFrame, batch_size: int, au
     :param clip_values:
     :return:
     """
-    augmentation_prob = tf.constant(0.1, dtype=tf.float32)
     AUTOTUNE = tf.data.AUTOTUNE
     # create tf.data.Dataset from provided paths to the images and labels
     dataset = tf.data.Dataset.from_tensor_slices((paths_and_labels.iloc[:, 0], paths_and_labels.iloc[:, 1:]))
@@ -174,10 +142,7 @@ def get_tensorflow_generator(paths_and_labels: pd.DataFrame, batch_size: int, au
         # go through all augmentation methods and "roll the dice (probability)" every time before applying the
         # specific augmentation
         for method in augmentation_methods:
-            dataset = dataset.map(lambda x, y: tf.cond(
-                tf.math.less(tf.random.uniform([], 0., 1.), augmentation_prob),
-                lambda: method(x, y),
-                lambda: x, y),
+            dataset = dataset.map(lambda x, y: method(x,y),
                                   num_parallel_calls=AUTOTUNE)
     # create batches
     dataset = dataset.batch(batch_size)
@@ -191,3 +156,92 @@ def get_tensorflow_generator(paths_and_labels: pd.DataFrame, batch_size: int, au
 
     # done
     return dataset
+
+
+
+def func_test_1():
+    # params
+    augment = True
+    augment_prob = 0.05
+    augment_methods = [
+        partial(random_rotate90_image, probability=augment_prob),
+        partial(random_flip_vertical_image, probability=augment_prob),
+        partial(random_flip_horizontal_image, probability=augment_prob),
+        partial(random_crop_image, probability=augment_prob),
+        partial(random_change_brightness_image, probability=augment_prob, min_max_delta=0.35),
+        partial(random_change_contrast_image, probability=augment_prob, min_factor=0.5, max_factor=1.5),
+        partial(random_change_saturation_image, probability=augment_prob, min_factor=0.5, max_factor=1.5),
+        partial(random_worse_quality_image, probability=augment_prob, min_factor=25, max_factor=99),
+        partial(random_convert_to_grayscale_image, probability=augment_prob)
+    ]
+    preprocessing_function = None
+    clip_value = False
+    batch_size = 8
+
+    train = data_load()
+    print(train)
+
+    dataset = get_tensorflow_generator(train, batch_size, augment, augment_prob, augment_methods,
+                                       preprocessing_function,
+                                       clip_value)
+    import matplotlib.pyplot as plt
+    for x,y in dataset:
+        tf.print(x[0].dtype)
+        tf.print(x[0])
+        fig = plt.figure()
+        fig.add_subplot(2, 4, 1)
+        plt.imshow(tf.cast(x[0], dtype=tf.int32))
+        fig.add_subplot(2, 4, 2)
+        plt.imshow(tf.cast(x[1], dtype=tf.int32))
+        fig.add_subplot(2, 4, 3)
+        plt.imshow(tf.cast(x[2], dtype=tf.int32))
+        fig.add_subplot(2, 4, 4)
+        plt.imshow(tf.cast(x[3], dtype=tf.int32))
+        fig.add_subplot(2, 4, 5)
+        plt.imshow(tf.cast(x[4], dtype=tf.int32))
+        fig.add_subplot(2, 4, 6)
+        plt.imshow(tf.cast(x[5], dtype=tf.int32))
+        fig.add_subplot(2, 4, 7)
+        plt.imshow(tf.cast(x[6], dtype=tf.int32))
+        fig.add_subplot(2, 4, 8)
+        plt.imshow(tf.cast(x[7], dtype=tf.int32))
+
+        plt.show()
+
+
+
+def main():
+    # params
+    augment = True
+    augment_prob = 0.1
+    augment_methods = [
+        partial(random_rotate90_image, probability=augment_prob),
+        partial(random_flip_vertical_image, probability=augment_prob),
+        partial(random_flip_horizontal_image, probability=augment_prob),
+        #random_crop_image,
+        #partial(random_change_brightness_image, min_max_delta=0.35),
+        #partial(random_change_contrast_image, min_factor=0.5, max_factor=1.5),
+        #partial(random_change_saturation_image, min_factor=0.5, max_factor=1.5),
+        #partial(random_worse_quality_image, min_factor=25, max_factor=99),
+        #random_convert_to_grayscale_image
+    ]
+    preprocessing_function = preprocess_image_VGGFace2
+    clip_value = False
+    batch_size = 32
+
+    train = data_load()
+    print(train)
+
+    dataset = get_tensorflow_generator(train, batch_size, augment, augment_prob, augment_methods,
+                                       preprocessing_function,
+                                       clip_value)
+
+    model = create_model((224, 224, 3))
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy')
+    model.summary()
+
+    model.fit(x=dataset, epochs=10)
+
+
+if __name__ == '__main__':
+    func_test_1()
