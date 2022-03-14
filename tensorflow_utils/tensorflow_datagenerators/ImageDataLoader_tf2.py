@@ -116,7 +116,8 @@ def augment(x, y, augmentation_function):
 def get_tensorflow_generator(paths_and_labels: pd.DataFrame, batch_size: int, augmentation: bool = False,
                              augmentation_methods: Optional[List[Tensorflow_Callable]] = None,
                              preprocessing_function: Optional[Tensorflow_Callable] = None,
-                             clip_values: Optional[bool] = None) -> tf.data.Dataset:
+                             clip_values: Optional[bool] = None,
+                             cache_loaded_images:Optional[bool]=None) -> tf.data.Dataset:
     """TODO: write description
 
     :param paths_and_labels:
@@ -135,8 +136,9 @@ def get_tensorflow_generator(paths_and_labels: pd.DataFrame, batch_size: int, au
     dataset = dataset.shuffle(paths_and_labels.shape[0])
     # define image loading function
     dataset = dataset.map(load_image, num_parallel_calls=AUTOTUNE)
-    # cache for better performance
-    dataset = dataset.cache()
+    # cache for better performance if specified
+    if cache_loaded_images:
+        dataset = dataset.cache()
     # augment if needed
     if augmentation:
         # go through all augmentation methods and "roll the dice (probability)" every time before applying the
