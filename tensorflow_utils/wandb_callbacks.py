@@ -1,5 +1,6 @@
 import gc
-from typing import Dict, Iterable, Tuple, Callable
+import os
+from typing import Dict, Iterable, Tuple, Callable, Optional
 
 import tensorflow as tf
 import numpy as np
@@ -19,10 +20,14 @@ class WandB_LR_log_callback(tf.keras.callbacks.Callback):
 class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
 
     def __init__(self, data_generator: Iterable[Tuple[np.ndarray, np.ndarray]],
-                 metrics: Dict[str, Callable[[np.ndarray, np.ndarray], float]]):
+                 metrics: Dict[str, Callable[[np.ndarray, np.ndarray], float]],
+                 metric_to_monitor:Optional[str]=None):
         super(WandB_val_metrics_callback, self).__init__()
         self.data_generator = data_generator
         self.metrics = metrics
+        self.metric_to_monitor = metric_to_monitor
+        self.best_metric_value=0
+
 
     def calculate_metrics(self) -> Dict[str, float]:
         # make predictions for data from generator and save ground truth labels
@@ -49,6 +54,12 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         print('val_metrics:', metric_values)
         # log them
         wandb.log(metric_values, commit=False)
+        # save best model based on defined metric if needed
+        if self.metric_to_monitor:
+            if self.best_metric_value<=metric_values[self.metric_to_monitor]:
+                self.best_metric_value = metric_values[self.metric_to_monitor]
+                print("saving...123")
+                self.model.save_weights(os.path.join(wandb.run.dir, "model_best_%s.h5"%self.metric_to_monitor))
         # clear multiprocessing Pool RAM if needed
         if self.data_generator.pool is not None:
             self.data_generator._realise_multiprocessing_pool()
