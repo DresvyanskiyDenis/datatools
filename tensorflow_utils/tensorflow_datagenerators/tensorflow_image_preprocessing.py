@@ -30,3 +30,9 @@ def preprocess_image_VGGFace2(images:tf.Tensor, labels):
     images=tf.math.subtract(tf.cast(images[...,::-1], dtype=tf.float32), vgg_face2_mean)
 
     return images, labels
+
+@tf.function
+def preprocess_data_Xception(images:tf.Tensor, labels):
+    images=tf.image.resize(images, [299, 299], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    images=tf.keras.applications.xception.preprocess_input(images)
+    return images, labels

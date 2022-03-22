@@ -16,6 +16,8 @@ List of functions:
 """
 from typing import Tuple, Optional, Union
 import numpy as np
+from PIL import Image
+import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, normalize, StandardScaler
 
 __author__ = "Denis Dresvyanskiy"
@@ -178,4 +180,19 @@ def VGGFace2_normalization(img:np.ndarray)->np.ndarray:
             Normalized array
     """
     img = img[:, :, ::-1] - vgg_face2_mean
+    return img
+
+def Xception_normalization(img:np.ndarray)->np.ndarray:
+    """Applies normalization to the image for the Xception neural network input
+    https://www.tensorflow.org/api_docs/python/tf/keras/applications/xception/preprocess_input
+
+    :param img: np.ndarray
+            3D array, which represents image.
+    :return: np.ndarray
+            Normalized image
+    """
+    img=Image.fromarray(img)
+    img=img.resize((299, 299), Image.BICUBIC)
+    img=np.array(img)
+    img=tf.keras.applications.xception.preprocess_input(img)
     return img
