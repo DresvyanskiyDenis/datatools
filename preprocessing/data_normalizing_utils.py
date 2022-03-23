@@ -18,6 +18,7 @@ from typing import Tuple, Optional, Union
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+from skimage.transform import resize
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, normalize, StandardScaler
 
 __author__ = "Denis Dresvyanskiy"
@@ -179,7 +180,7 @@ def VGGFace2_normalization(img:np.ndarray)->np.ndarray:
     :return: np.ndarray
             Normalized array
     """
-    img = img[:, :, ::-1] - vgg_face2_mean
+    img = img[..., ::-1] - vgg_face2_mean
     return img
 
 def Xception_normalization(img:np.ndarray)->np.ndarray:
@@ -191,8 +192,9 @@ def Xception_normalization(img:np.ndarray)->np.ndarray:
     :return: np.ndarray
             Normalized image
     """
-    img=Image.fromarray(img)
-    img=img.resize((299, 299), Image.BICUBIC)
-    img=np.array(img)
-    img=tf.keras.applications.xception.preprocess_input(img)
-    return img
+    img_res=np.zeros((img.shape[0], 299, 299, 3))
+    for idx, image in enumerate(img):
+        img_res[idx]= np.array(Image.fromarray(image.astype('uint8')).resize((299, 299), Image.NEAREST))
+
+    img_res=tf.keras.applications.xception.preprocess_input(img_res)
+    return img_res
