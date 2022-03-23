@@ -58,7 +58,6 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         if self.metric_to_monitor:
             if self.best_metric_value<=metric_values[self.metric_to_monitor]:
                 self.best_metric_value = metric_values[self.metric_to_monitor]
-                print("saving...123")
                 self.model.save_weights(os.path.join(wandb.run.dir, "model_best_%s.h5"%self.metric_to_monitor))
         # clear multiprocessing Pool RAM if needed
         if self.data_generator.pool is not None:
