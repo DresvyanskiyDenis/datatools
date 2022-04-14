@@ -198,3 +198,17 @@ def Xception_normalization(img:np.ndarray)->np.ndarray:
 
     img_res=tf.keras.applications.xception.preprocess_input(img_res)
     return img_res
+
+def MobileNetv3_normalization(img:np.ndarray)->np.ndarray:
+    """Applies normalization to the image for the MobileNetv3 neural network input
+    https://www.tensorflow.org/api_docs/python/tf/keras/applications/mobilenet_v3/preprocess_input
+
+    :param img: np.ndarray
+            3D array, which represents image.
+    :return: np.ndarray
+            Normalized image
+    """
+
+    img=tf.keras.applications.mobilenet_v3.preprocess_input(img)
+    return img
+

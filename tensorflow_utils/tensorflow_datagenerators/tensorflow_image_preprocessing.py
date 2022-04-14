@@ -36,3 +36,14 @@ def preprocess_data_Xception(images:tf.Tensor, labels):
     images=tf.image.resize(images, [299, 299], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     images=tf.keras.applications.xception.preprocess_input(images)
     return images, labels
+
+@tf.function
+def preprocess_data_Xception(images:tf.Tensor, labels):
+    images=tf.image.resize(images, [299, 299], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    images=tf.keras.applications.xception.preprocess_input(images)
+    return images, labels
+
+@tf.function
+def preprocess_data_MobileNetv3(images:tf.Tensor, labels):
+    images=tf.keras.applications.mobilenet_v3.preprocess_input(images)
+    return images, labels

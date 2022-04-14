@@ -254,7 +254,7 @@ class ImageDataLoader(Sequence):
         data, labels = self._load_and_preprocess_batch(index)
         if self.preprocess_function is not None:
             data = self.preprocess_function(data)
-        return (data, labels)
+        return (data.astype('float32'), labels)
 
     def __len__(self) -> int:
         # TODO: write description
