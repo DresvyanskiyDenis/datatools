@@ -14,7 +14,7 @@ class WandB_LR_log_callback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs):
         lr = self.model.optimizer.learning_rate.numpy().flatten()[0]
-        #wandb.log({"lr": lr}, commit=False)
+        wandb.log({"lr": lr}, commit=False)
 
 
 class WandB_val_metrics_callback_depricated(tf.keras.callbacks.Callback):
@@ -34,7 +34,7 @@ class WandB_val_metrics_callback_depricated(tf.keras.callbacks.Callback):
         total_predictions = np.zeros((0,))
         total_ground_truth = np.zeros((0,))
         for x, y in self.data_generator:
-            predictions = self.model.predict(x, batch_size=32)
+            predictions = self.model.predict(x, batch_size=64)
             predictions = predictions.argmax(axis=-1).reshape((-1,))
             total_predictions = np.append(total_predictions, predictions)
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
@@ -84,7 +84,7 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         total_predictions = np.zeros((0,))
         total_ground_truth = np.zeros((0,))
         for x, y in self.data_generator.as_numpy_iterator():
-            predictions = self.model.predict(x)
+            predictions = self.model.predict(x, batch_size=64)
             predictions = predictions.argmax(axis=-1).reshape((-1,))
             total_predictions = np.append(total_predictions, predictions)
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
@@ -103,10 +103,10 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         metric_values = self.calculate_metrics()
         print('val_metrics:', metric_values)
         # log them
-        #wandb.log(metric_values, commit=False)
+        wandb.log(metric_values, commit=False)
         # save best model based on defined metric if needed
         if self.metric_to_monitor:
             if self.best_metric_value<=metric_values[self.metric_to_monitor]:
                 self.best_metric_value = metric_values[self.metric_to_monitor]
-                #self.model.save_weights(os.path.join(wandb.run.dir, "model_best_%s.h5"%self.metric_to_monitor))
+                self.model.save_weights(os.path.join(wandb.run.dir, "model_best_%s.h5"%self.metric_to_monitor))
 
