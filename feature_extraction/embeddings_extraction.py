@@ -92,3 +92,66 @@ def extract_deep_embeddings_from_images_in_dir(path_to_dir:str, extractor:tf.ker
         del loaded_images
         gc.collect()
     return embeddings
+
+
+def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extractor:tf.keras.Model, output_dir:str,
+                                              batch_size: int = 16,
+                                              preprocessing_functions: Tuple[Callable[[np.ndarray], np.ndarray], ...] = None
+                                              ) ->None:
+    """ Extracts deep embeddings from the images using provided extractor (tf Model).
+        Images should be passed as a pd.DataFrame, where the first and single columns should provide the full path to the image.
+        All extracted deep embeddings will be written to as a separate csv file in the output_dir.
+
+    :param paths_to_images: pd.DataFrame
+            DataFrame with a single column with full paths to the images
+    :param extractor: tf.keras.Model
+            Model to extract deep embeddings
+    :param output_dir: str
+            path to save extracted deep embeddings
+    :param batch_size: int
+            batch size for the extractor
+    :param preprocessing_functions: Tuple[Callable[[np.ndarray], np.ndarray], ...]
+            Tuple of Callable functions to apply to the images before extracting deep embeddings.
+    """
+    # check if output_dir exists
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+
+    # form the final dataframe, which will be written
+    # define columns for df
+    num_embeddings = tuple(extractor.output_shape)[1]
+    columns = ['filename'] + ["embedding_"+str(i) for i in range(num_embeddings)]
+    # create dataframe for saving features
+    extracted_deep_embeddings = pd.DataFrame(columns=columns)
+    # save the "template" csv file to append to it in future
+    extracted_deep_embeddings.to_csv(os.path.join(output_dir, 'extracted_deep_embeddings.csv'), index=False)
+
+    # load batch_size images and then predict them
+    for extraction_idx, filename_idx in enumerate(range(0, paths_to_images.shape[0], batch_size)):
+        batch_filenames = paths_to_images.iloc[filename_idx:(filename_idx + batch_size),0].values.flatten()
+        # load images and convert them to the float32 type for the extractor
+        loaded_images = load_batch_of_images(batch_filenames)
+        loaded_images=loaded_images.astype(np.float32)
+        # preprocess loaded image if needed
+        if preprocessing_functions is not None:
+            for preprocessing_function in preprocessing_functions:
+                loaded_images = preprocessing_function(loaded_images)
+        # extract embeddings
+        extracted_emb = extract_deep_embeddings_from_batch_of_images(loaded_images, extractor, batch_size)
+        extracted_emb = pd.DataFrame(data=np.concatenate([np.array(batch_filenames).reshape((-1, 1)),
+                                                         extracted_emb], axis=1),
+                                    columns=columns)
+        # append them to the already extracted ones
+        extracted_deep_embeddings = extracted_deep_embeddings.append(extracted_emb, ignore_index=True)
+        # dump the extracted data to the file
+        if extraction_idx % 100 == 0:
+            extracted_deep_embeddings.to_csv(os.path.join(output_dir, 'extracted_deep_embeddings.csv'), index=False,
+                                             header=False, mode="a")
+            # clear RAM
+            extracted_deep_embeddings=pd.DataFrame(columns=columns)
+            gc.collect()
+        del loaded_images
+        gc.collect()
+    # dump remaining data to the file
+    extracted_deep_embeddings.to_csv(os.path.join(output_dir, 'extracted_deep_embeddings.csv'), index=False,
+                                     header=False, mode="a")
