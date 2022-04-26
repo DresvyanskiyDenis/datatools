@@ -15,7 +15,9 @@ __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 import numpy as np
+import tensorflow as tf
 import tensorflow.keras.backend as K
+
 
 def weighted_categorical_crossentropy(weights:np.ndarray):
     """
@@ -80,11 +82,9 @@ def categorical_focal_loss(alpha, gamma=2.):
         :param y_pred: A tensor resulting from a softmax
         :return: Output tensor.
         """
-
         # Clip the prediction value to prevent NaN's and Inf's
         epsilon = K.epsilon()
         y_pred = K.clip(y_pred, epsilon, 1. - epsilon)
-
         # Calculate Cross Entropy
         cross_entropy = -y_true * K.log(y_pred)
 
