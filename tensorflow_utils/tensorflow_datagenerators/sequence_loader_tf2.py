@@ -32,9 +32,6 @@ def get_tensorflow_sequence_loader(embeddings_and_labels: pd.DataFrame, num_clas
     AUTOTUNE = tf.data.AUTOTUNE
     # create tf.data.Dataset from provided paths to the images and labels
     dataset = tf.data.Dataset.from_tensor_slices(embeddings_and_labels)
-    # cache for better performance if specified
-    if cache_loaded_seq:
-        dataset = dataset.cache()
     # forming sequences of windows
     dataset = dataset.window(window_size, shift=window_shift, stride=window_stride)
     # commant to convert windows from the Dataset instances to the Tensors back to unite them in one Dataset
@@ -50,27 +47,30 @@ def get_tensorflow_sequence_loader(embeddings_and_labels: pd.DataFrame, num_clas
     dataset = dataset.batch(batch_size)
     # convert to sequence-to-one task if needed
     if type_of_labels == "sequence_to_one":
+        # function to convert labels to sequence-to-one option, where for one window only one label is related
         def convert_labels_to_sequence_to_one(features, labels):
-            tf.print("labels before converting: ", labels, "shape:", tf.shape(labels))
             # argmax to convert to the 2D tensor
             labels = tf.argmax(labels, axis=-1)
-            tf.print("labels after argmax: ", labels, "shape:", tf.shape(labels))
-            # find a mode for each axis
+            # find a mode (the most often value) for each axis
             labels = tf.map_fn(
                 lambda x: tf.unique_with_counts(x).y[tf.argmax(tf.unique_with_counts(x).count, output_type=tf.int32)],
                 labels)
-            tf.print("labels after converting: ", labels, "shape:", tf.shape(labels))
+            # convert sequence-to-one to the one-hot encoding again
+            labels=tf.one_hot(labels, num_classes)
             labels = tf.cast(labels, tf.float32)
-            labels = tf.expand_dims(labels, axis=1)
             return features, labels
-
+        # apply constructed function to the labels
         dataset = dataset.map(convert_labels_to_sequence_to_one, num_parallel_calls=AUTOTUNE)
-    # apply preprocessing function to images
+    # apply preprocessing function to images if needed
     if preprocessing_function:
         dataset = dataset.map(lambda x, y: preprocessing_function(x, y), num_parallel_calls=AUTOTUNE)
     # clip values to [0., 1.] if needed
     if clip_values:
         dataset = dataset.map(lambda x, y: (tf.clip_by_value(x, 0, 1), y), num_parallel_calls=AUTOTUNE)
+    # cache for better performance if specified
+    if cache_loaded_seq:
+        dataset = dataset.cache()
+    # prefetch
     dataset = dataset.prefetch(AUTOTUNE)
 
     # done
@@ -78,33 +78,60 @@ def get_tensorflow_sequence_loader(embeddings_and_labels: pd.DataFrame, num_clas
 
 
 if __name__=="__main__":
-    input_shape=(10,8)
-    window_size=3
+    # tests for sequence loader, especially sequence-to-one option
+    num_features=3
+    num_instances=21
+    window_size=5
     windows_shift=1
     window_stride=1
-    num_classes=2
+    num_classes=3
+    input_shape = (window_size, num_features)
 
-    data=np.ones((10,10))*np.arange(10)[..., np.newaxis]
-    data[:,-2:]=0
-    data[:5,-2]=1
-    data[5:, -1] = 1
+    data=np.ones((num_instances,num_features+num_classes))*np.arange(num_instances)[..., np.newaxis]
+    data[:,-num_classes:]=0
+    data[:num_instances//3,-3]=1
+    data[num_instances//3:num_instances//3*2, -2] = 1
+    data[num_instances // 3 * 2:, -1] = 1
+    # change labels for testing
+    data[0, -num_classes:] = np.array([0, 0, 1]) # 0
+    data[1, -num_classes:] = np.array([0, 0, 1])  # 1
+    data[2, -num_classes:] = np.array([1, 0, 0])  # 2
+    data[3, -num_classes:] = np.array([1, 0, 0])  # 3
+    data[4, -num_classes:] = np.array([0, 1, 0])  # 4
+    data[5, -num_classes:] = np.array([0, 1, 0])  # 5
+    data[6, -num_classes:] = np.array([0, 1, 0])  # 6
+    data[7, -num_classes:] = np.array([0, 0, 1])  # 7
+    data[8, -num_classes:] = np.array([0, 0, 1])  # 8
+    data[9, -num_classes:] = np.array([0, 0, 1])  # 9
+    data[10, -num_classes:] = np.array([1, 0, 0])  # 10
+    data[11, -num_classes:] = np.array([1, 0, 0])  # 11
+    data[12, -num_classes:] = np.array([1, 0, 0])  # 12
+    data[13, -num_classes:] = np.array([0, 1, 0])  # 13
+    data[14, -num_classes:] = np.array([0, 1, 0])  # 14
+    data[15, -num_classes:] = np.array([1, 0, 0])  # 15
+    data[16, -num_classes:] = np.array([0, 0, 1])  # 16
+    data[17, -num_classes:] = np.array([0, 1, 0])  # 17
+    data[18, -num_classes:] = np.array([0, 0, 1])  # 18
+    data[19, -num_classes:] = np.array([0, 0, 1])  # 19
+    data[20, -num_classes:] = np.array([1, 0, 0])  # 20
+
     print(data)
-    df_columns=["embedding_"+str(i) for i in range(8)]+["label_"+str(i) for i in range(num_classes)]
+    df_columns=["embedding_"+str(i) for i in range(num_features)]+["label_"+str(i) for i in range(num_classes)]
     df=pd.DataFrame(data,columns=df_columns)
     print(df)
 
     data_generator=get_tensorflow_sequence_loader(embeddings_and_labels=df, num_classes=num_classes,
-                                   batch_size=1, type_of_labels="sequence_to_one",
+                                   batch_size=3, type_of_labels="sequence_to_one",
                                    window_size=window_size, window_shift=windows_shift, window_stride=window_stride,
                                    shuffle= False,
                              preprocessing_function = None,
                              clip_values = None,
                              cache_loaded_seq=None)
 
-    for x,y in data_generator.as_numpy_iterator():
-        print(x)
-        print(y)
-        print("-------------------------------")
+    for i, (x,y) in enumerate(data_generator.as_numpy_iterator()):
+        #print(x)
+        print("%i:"%i,y)
+        #print("-------------------------------")
 
     """model=tf.keras.Sequential()
     model.add(tf.keras.layers.LSTM(64,input_shape=input_shape, return_sequences=True))
