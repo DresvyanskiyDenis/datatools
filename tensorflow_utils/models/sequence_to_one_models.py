@@ -19,10 +19,6 @@ List of functions:
     * ccc_loss - Concordance Correlation Coefficient loss taken from AVEC scripts.
     * CCC_loss_tf - Concordance Correlation Coefficient loss taken, my own tensorflow implementation.
 """
-from typing import Tuple, Union, Optional
-import tensorflow as tf
-import tensorflow.keras.backend as K
-
 __author__ = "Denis Dresvyanskiy"
 __copyright__ = "Copyright 2021"
 __credits__ = ["Denis Dresvyanskiy"]
@@ -30,6 +26,10 @@ __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 from attention import Attention
+from typing import Tuple, Union, Optional
+import tensorflow as tf
+import tensorflow.keras.backend as K
+
 
 
 def create_1d_cnn_model_classification(*, input_shape: Tuple[int, ...], num_classes: int,
