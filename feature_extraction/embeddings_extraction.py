@@ -96,7 +96,8 @@ def extract_deep_embeddings_from_images_in_dir(path_to_dir:str, extractor:tf.ker
 
 def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extractor:tf.keras.Model, output_dir:str,
                                               batch_size: int = 16,
-                                              preprocessing_functions: Tuple[Callable[[np.ndarray], np.ndarray], ...] = None
+                                              preprocessing_functions: Tuple[Callable[[np.ndarray], np.ndarray], ...] = None,
+                                              include_labels:bool =False
                                               ) ->None:
     """ Extracts deep embeddings from the images using provided extractor (tf Model).
         Images should be passed as a pd.DataFrame, where the first and single columns should provide the full path to the image.
@@ -112,6 +113,10 @@ def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extr
             batch size for the extractor
     :param preprocessing_functions: Tuple[Callable[[np.ndarray], np.ndarray], ...]
             Tuple of Callable functions to apply to the images before extracting deep embeddings.
+    :param include_labels: bool
+            If True, labels will be included in the output csv file
+    :param num_labels: int
+            Number of labels to include in the output csv file
     """
     # check if output_dir exists
     if not os.path.exists(output_dir):
@@ -121,6 +126,8 @@ def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extr
     # define columns for df
     num_embeddings = tuple(extractor.output_shape)[1]
     columns = ['filename'] + ["embedding_"+str(i) for i in range(num_embeddings)]
+    if include_labels:
+        columns += ["label_"+str(i) for i in range(paths_to_images.shape[1]-1)]
     # create dataframe for saving features
     extracted_deep_embeddings = pd.DataFrame(columns=columns)
     # save the "template" csv file to append to it in future
@@ -141,6 +148,11 @@ def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extr
         extracted_emb = pd.DataFrame(data=np.concatenate([np.array(batch_filenames).reshape((-1, 1)),
                                                          extracted_emb], axis=1),
                                     columns=columns)
+        if include_labels:
+            labels = paths_to_images.iloc[filename_idx:(filename_idx + batch_size),1:].values
+            num_labels = labels.shape[1]
+            additional_columns = ["label_"+str(i) for i in range(num_labels)]
+            extracted_emb = pd.concat([extracted_emb, pd.DataFrame(data=labels, columns=additional_columns)], axis=1)
         # append them to the already extracted ones
         extracted_deep_embeddings = extracted_deep_embeddings.append(extracted_emb, ignore_index=True)
         # dump the extracted data to the file
