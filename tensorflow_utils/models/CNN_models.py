@@ -105,7 +105,7 @@ def get_EMO_VGGFace2(path:str)->tf.keras.Model:
     pretrained_VGGFace2 = _get_pretrained_VGGFace2_model("", pretrained=False)
     x = pretrained_VGGFace2.get_layer('activation_48').output
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dense(units=512, activation='relu')(x)
+    x = tf.keras.layers.Dense(units=512, activation='relu', name='embeddings_layer')(x)
     x = tf.keras.layers.Dropout(0.5)(x)
     x = tf.keras.layers.Dense(units=7, activation='softmax')(x)
     EMO_VGGFace2_model = tf.keras.Model(inputs=pretrained_VGGFace2.inputs, outputs=[x])
@@ -157,6 +157,18 @@ def get_pretrained_modified_EMO_VGGFace2(dense_neurons_after_conv: Tuple[int,...
     del EMO_VGGFace2_model
     tf.keras.backend.clear_session()
     return model
+
+def get_EmoVGGFace2_embeddings_extractor(path_to_weights: str = None) -> tf.keras.Model:
+    # construct old model
+    EMO_VGGFace2_model = get_EMO_VGGFace2(path_to_weights)
+    # start to construct new model by cutting off old one
+    x = EMO_VGGFace2_model.get_layer('embeddings_layer').output
+    # create model
+    model = tf.keras.Model(inputs=EMO_VGGFace2_model.inputs, outputs=x)
+    del EMO_VGGFace2_model
+    tf.keras.backend.clear_session()
+    return model
+
 
 
 

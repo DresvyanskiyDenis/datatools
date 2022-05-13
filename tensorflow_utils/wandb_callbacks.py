@@ -85,7 +85,7 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         total_ground_truth = np.zeros((0,))
         for x, y in self.data_generator.as_numpy_iterator():
             predictions = self.model.predict(x, batch_size=64)
-            predictions = predictions.argmax(axis=-1).reshape((-1,))
+            predictions = np.squeeze(predictions).argmax(axis=-1).reshape((-1,))
             total_predictions = np.append(total_predictions, predictions)
             total_ground_truth = np.append(total_ground_truth, y.argmax(axis=-1).reshape((-1,)))
         # calculate all provided metrics and save them as dict object
