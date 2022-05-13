@@ -145,18 +145,18 @@ def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extr
                 loaded_images = preprocessing_function(loaded_images)
         # extract embeddings
         extracted_emb = extract_deep_embeddings_from_batch_of_images(loaded_images, extractor, batch_size)
-        extracted_emb = pd.DataFrame(data=np.concatenate([np.array(batch_filenames).reshape((-1, 1)),
-                                                         extracted_emb], axis=1),
-                                    columns=columns)
+        # if we want to include labels in the resulting csv file
         if include_labels:
             labels = paths_to_images.iloc[filename_idx:(filename_idx + batch_size),1:].values
-            num_labels = labels.shape[1]
-            additional_columns = ["label_"+str(i) for i in range(num_labels)]
-            extracted_emb = pd.concat([extracted_emb, pd.DataFrame(data=labels, columns=additional_columns)], axis=1)
+            extracted_emb = np.concatenate([extracted_emb, labels], axis=1)
+        # append the filenames as a first column
+        extracted_emb = pd.DataFrame(data=np.concatenate([np.array(batch_filenames).reshape((-1, 1)),
+                                                          extracted_emb], axis=1),
+                                     columns=columns)
         # append them to the already extracted ones
         extracted_deep_embeddings = extracted_deep_embeddings.append(extracted_emb, ignore_index=True)
         # dump the extracted data to the file
-        if extraction_idx % 100 == 0:
+        if extraction_idx % 1000 == 0:
             extracted_deep_embeddings.to_csv(os.path.join(output_dir, 'extracted_deep_embeddings.csv'), index=False,
                                              header=False, mode="a")
             # clear RAM
