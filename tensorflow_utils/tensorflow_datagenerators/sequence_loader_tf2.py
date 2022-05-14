@@ -49,14 +49,10 @@ def get_tensorflow_sequence_loader(embeddings_and_labels: pd.DataFrame, num_clas
     if type_of_labels == "sequence_to_one":
         # function to convert labels to sequence-to-one option, where for one window only one label is related
         def convert_labels_to_sequence_to_one(features, labels):
-            # argmax to convert to the 2D tensor
-            labels = tf.argmax(labels, axis=-1)
-            # find a mode (the most often value) for each axis
-            labels = tf.map_fn(
-                lambda x: tf.unique_with_counts(x).y[tf.argmax(tf.unique_with_counts(x).count, output_type=tf.int32)],
-                labels)
-            # convert sequence-to-one to the one-hot encoding again
-            labels=tf.one_hot(labels, num_classes)
+            # sum the labels through the 1 dimension
+            labels = tf.reduce_sum(labels, axis=1)
+            # normalize labels
+            labels=tf.linalg.normalize(labels, ord=1, axis=-1)[0]
             labels = tf.cast(labels, tf.float32)
             return features, labels
         # apply constructed function to the labels
@@ -81,7 +77,7 @@ if __name__=="__main__":
     # tests for sequence loader, especially sequence-to-one option
     num_features=3
     num_instances=21
-    window_size=5
+    window_size=3
     windows_shift=1
     window_stride=1
     num_classes=3
@@ -121,7 +117,7 @@ if __name__=="__main__":
     print(df)
 
     data_generator=get_tensorflow_sequence_loader(embeddings_and_labels=df, num_classes=num_classes,
-                                   batch_size=3, type_of_labels="sequence_to_one",
+                                   batch_size=1, type_of_labels="sequence_to_one",
                                    window_size=window_size, window_shift=windows_shift, window_stride=window_stride,
                                    shuffle= False,
                              preprocessing_function = None,
@@ -130,7 +126,7 @@ if __name__=="__main__":
 
     for i, (x,y) in enumerate(data_generator.as_numpy_iterator()):
         #print(x)
-        print("%i:"%i,y)
+        print("%i:"%i,y.shape)
         #print("-------------------------------")
 
     """model=tf.keras.Sequential()
