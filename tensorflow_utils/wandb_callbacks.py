@@ -109,6 +109,10 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
             if self.best_metric_value<=metric_values[self.metric_to_monitor]:
                 self.best_metric_value = metric_values[self.metric_to_monitor]
                 self.model.save_weights(os.path.join(wandb.run.dir, "model_best_%s.h5"%self.metric_to_monitor))
-                wandb.config.update({'best_%s:'%(self.metric_to_monitor):
-                               self.best_metric_value}, allow_val_change=True)
+
+
+    def on_train_end(self, logs):
+        wandb.config.update({'best_%s' % (self.metric_to_monitor):
+                                 self.best_metric_value})
+        print("------------------------------BEST VALUE WAS SAVED-------------------------")
 
