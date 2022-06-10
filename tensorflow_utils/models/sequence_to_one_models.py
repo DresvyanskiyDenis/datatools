@@ -84,7 +84,7 @@ def create_1d_cnn_model_classification(*, input_shape: Tuple[int, ...], num_clas
     return model
 
 
-def create_simple_RNN_network(*, input_shape: Tuple[int, ...], num_output_neurons: int,
+def create_simple_RNN_network(*, input_shape: Tuple[int, ...], num_output_neurons: int, output_activation: str = 'softmax',
                               neurons_on_layer: Tuple[int, ...] = (256, 256),
                               rnn_type: str = 'LSTM',
                               dnn_layers: Tuple[int, ...],
@@ -96,6 +96,8 @@ def create_simple_RNN_network(*, input_shape: Tuple[int, ...], num_output_neuron
                     input shape (of sequence )for tensrflow.keras model
     :param num_output_neurons: int
                     amount of neurons at the end of model (output of model)
+    :param output_activation: str
+                Output activation function (for output neurons).
     :param neurons_on_layer: tuple(int,...)
                     list of numbers of neurons on each layer. It controls the depth of the network as well.
     :param rnn_type: str
@@ -138,7 +140,7 @@ def create_simple_RNN_network(*, input_shape: Tuple[int, ...], num_output_neuron
         x = tf.keras.layers.Dense(neurons, activation='relu', kernel_regularizer=regularization)(x)
         if dropout: x = tf.keras.layers.Dropout(0.2)(x)
     # last layer
-    output = tf.keras.layers.Dense(num_output_neurons, activation='tanh')(x)
+    output = tf.keras.layers.Dense(num_output_neurons, activation=output_activation)(x)
     output = tf.keras.layers.Reshape((-1, 1))(output)
     # create model
     model = tf.keras.Model(inputs=[input], outputs=[output])
