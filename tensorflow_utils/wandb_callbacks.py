@@ -14,7 +14,7 @@ class WandB_LR_log_callback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs):
         lr = self.model.optimizer.learning_rate.numpy().flatten()[0]
-        #wandb.log({"lr": lr}, commit=False)
+        wandb.log({"lr": lr}, commit=False)
 
 
 class WandB_val_metrics_callback_depricated(tf.keras.callbacks.Callback):
@@ -101,8 +101,8 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         if self.log_class_distribution:
             total_class_distribution = total_class_distribution/total_class_distribution.sum()
             total_class_distribution = total_class_distribution.reshape((-1,))
-            #wandb.log({"class_%i_distribution"%i:total_class_distribution[i] for i in range(total_class_distribution.shape[0])},
-            #          commit=False)
+            wandb.log({"class_%i_distribution"%i:total_class_distribution[i] for i in range(total_class_distribution.shape[0])},
+                      commit=False)
         # calculate all provided metrics and save them as dict object
         # as Dict[metric_name->value]
         results = {}
@@ -118,16 +118,16 @@ class WandB_val_metrics_callback(tf.keras.callbacks.Callback):
         metric_values = self.calculate_metrics()
         print('val_metrics:', metric_values)
         # log them
-        #wandb.log(metric_values, commit=False)
+        wandb.log(metric_values, commit=False)
         # save best model based on defined metric if needed
         if self.metric_to_monitor:
             if self.best_metric_value<=metric_values[self.metric_to_monitor]:
                 self.best_metric_value = metric_values[self.metric_to_monitor]
-                #self.model.save_weights(os.path.join(wandb.run.dir, "model_best_%s.h5"%self.metric_to_monitor))
+                self.model.save_weights(os.path.join(wandb.run.dir, "model_best_%s.h5"%self.metric_to_monitor))
 
 
     def on_train_end(self, logs):
-        #wandb.config.update({'best_%s' % (self.metric_to_monitor):
-        #                         self.best_metric_value})
+        wandb.config.update({'best_%s' % (self.metric_to_monitor):
+                                 self.best_metric_value})
         print("------------------------------BEST VALUE WAS SAVED-------------------------")
 
