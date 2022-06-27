@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 """Contains functions for face detection (recognition)
 
-Module contains functions for face recognition, using RetinaFace detector and insightface lib.
+Module contains functions for face recognition, using RetinaFace detector.
 RetinaFace: https://arxiv.org/abs/1905.00641
-Insightface lib: https://insightface.ai/projects
 
 List of functions:
 
@@ -22,8 +21,19 @@ __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 from typing import Tuple
 import cv2
-import insightface
+from retinaface import RetinaFace
 import numpy as np
+
+def _find_the_most_confident(detected_faces):
+    result_face = None
+    for key, face in detected_faces.items():
+        if result_face is None:
+            result_face = face
+        elif result_face['score'] < face['score']:
+            result_face = face
+    return result_face
+
+
 
 def recognize_the_most_confident_person_retinaFace(im:np.ndarray, detector:object,
                                                    threshold:float=0.5)->Tuple[int,...]:
@@ -38,31 +48,26 @@ def recognize_the_most_confident_person_retinaFace(im:np.ndarray, detector:objec
     :return: Tuple[int,...]
             Tuple of 4 ints, which represent the bounding box of face
     """
-    bboxes, landmark = detector.detect(im, threshold=threshold, scale=1.0)
+    result = detector.detect_faces(im)
     # check if there are some found bboxes
-    if len(bboxes)==0:
-        return tuple()
+    if len(result)==0 or result is None:
+        return None
+    if type(result) is tuple:
+        if result[0].shape[0]==0:
+            return None
     # find the most confident face (hopefully, it is that, which we need)
-    max_conf=bboxes[0][-1]
-    bbox_most_conf=bboxes[0][:-1]
-    for bbox_idx in range(len(bboxes)):
-        if max_conf<bboxes[bbox_idx][-1]:
-            max_conf=bboxes[bbox_idx][-1]
-            bbox_most_conf=bboxes[bbox_idx][:-1]
-    # convert it to int
-    bbox_most_conf=tuple(int(_) for _ in bbox_most_conf)
-    return bbox_most_conf
+    most_conf_face = _find_the_most_confident(result)
+    # extract bounding box from the results
+    bbox = tuple(most_conf_face['facial_area'])
+    return bbox
 
-def load_and_prepare_detector_retinaFace(model_name:str='retinaface_r50_v1')->object:
-    """Loads and prepare model from insightface.model_zoo
+def load_and_prepare_detector_retinaFace()->object:
+    """Loads and prepare model RetinaFace
 
-    :param model_name: str
-            name of the model to be loaded
     :return: object
-            insightface lib model
+            RetinaFace TF model
     """
-    model = insightface.model_zoo.get_model(model_name)
-    model.prepare(ctx_id=-1, nms=0.4)
+    model = RetinaFace
     return model
 
 def extract_face_according_bbox(img:np.ndarray, bbox:Tuple[int,...])->np.ndarray:
