@@ -192,6 +192,7 @@ def Xception_normalization(img:np.ndarray)->np.ndarray:
     :return: np.ndarray
             Normalized image
     """
+    if len(img.shape)==3: img = img[np.newaxis,...]
     img_res=np.zeros((img.shape[0], 299, 299, 3))
     for idx, image in enumerate(img):
         img_res[idx]= np.array(Image.fromarray(image.astype('uint8')).resize((299, 299), Image.NEAREST))
