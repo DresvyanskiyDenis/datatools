@@ -23,8 +23,7 @@ class DenseModel(torch.nn.Module):
                                     }
 
     def __init__(self, input_shape:int, dense_neurons: Tuple[int,...], activations:Union[str,Tuple[str,...]]='relu',
-                    dropout: Optional[float] = 0.3,
-                    regularization:Optional[bool]=None,
+                    dropout: Optional[float] = None,
                     output_neurons: Union[Tuple[int,...], int] = 7,
                     activation_function_for_output:str='softmax'):
         super(DenseModel, self).__init__()
@@ -32,7 +31,6 @@ class DenseModel(torch.nn.Module):
         self.dense_neurons = dense_neurons
         self.activations = activations
         self.dropout = dropout
-        self.regularization = regularization
         self.output_neurons = output_neurons
         self.activation_function_for_output = activation_function_for_output
         # build the model
@@ -53,9 +51,14 @@ class DenseModel(torch.nn.Module):
         for i in range(len(self.dense_neurons)-1):
             self.layers.append(torch.nn.Linear(self.dense_neurons[i], self.dense_neurons[i+1]))
             self.layers.append(self.activation_functions_mapping[self.activations[i+1]]())
+            if self.dropout:
+                self.layers.append(torch.nn.Dropout(self.dropout))
         # output layer
         self.layers.append(torch.nn.Linear(self.dense_neurons[-1], self.output_neurons))
-        self.layers.append(self.activation_functions_mapping[self.activation_function_for_output]())
+        if self.activation_function_for_output == 'softmax':
+            self.layers.append(torch.nn.Softmax(dim=-1))
+        else:
+            self.layers.append(self.activation_functions_mapping[self.activation_function_for_output]())
 
 
 
@@ -64,7 +67,6 @@ if __name__ == '__main__':
     print(f"Using {device} device")
     model = DenseModel(input_shape=100, dense_neurons=(200, 300, 500), activations=('relu', 'sigmoid', 'tanh'),
                     dropout= 0.3,
-                    regularization=None,
                     output_neurons= 4,
                     activation_function_for_output='softmax').to(device)
 
