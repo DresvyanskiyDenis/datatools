@@ -75,3 +75,6 @@ if __name__ == '__main__':
     print('-----------------------------------')
     print('model summary:')
     print(summary(model, (100,)))
+    print('-----------------------------------')
+    print('net parameters:')
+    print(list(model.parameters()))
