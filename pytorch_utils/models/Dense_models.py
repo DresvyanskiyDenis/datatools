@@ -19,7 +19,7 @@ class DenseModel(torch.nn.Module):
                                     'sigmoid': torch.nn.Sigmoid,
                                     'tanh': torch.nn.Tanh,
                                     'softmax': torch.nn.Softmax,
-                                    'linear': torch.nn.Linear
+                                    'linear': None
                                     }
 
     def __init__(self, input_shape:int, dense_neurons: Tuple[int,...], activations:Union[str,Tuple[str,...]]='relu',
@@ -57,6 +57,8 @@ class DenseModel(torch.nn.Module):
         self.layers.append(torch.nn.Linear(self.dense_neurons[-1], self.output_neurons))
         if self.activation_function_for_output == 'softmax':
             self.layers.append(torch.nn.Softmax(dim=-1))
+        elif self.activation_function_for_output == 'linear':
+            pass
         else:
             self.layers.append(self.activation_functions_mapping[self.activation_function_for_output]())
 
