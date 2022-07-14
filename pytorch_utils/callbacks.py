@@ -7,15 +7,22 @@ import os
 
 class TorchEarlyStopping:
 
-    def __init__(self, verbose: bool = True, patience: int = 5, save_path: str = "tmp"):
+    def __init__(self, mode:str='min', verbose: bool = True, patience: int = 5, save_path: str = "tmp"):
         self.verbose = verbose
         self.patience = patience
         self.save_path = save_path
-        self.best_loss = np.inf
+        if mode=='min':
+            self.best_loss = np.inf
+            self.compare_operator= np.less
+        else:
+            self.best_loss = -np.inf
+            self.compare_operator= np.greater
         self.counter = 0
 
+
     def __call__(self, epoch_loss: float, model: torch.nn.Module) -> bool:
-        if epoch_loss < self.best_loss:
+        if self.compare_operator(epoch_loss, self.best_loss):
+            # TODO: check it
             self.best_loss = epoch_loss
             self.counter = 0
             if self.verbose:
@@ -44,12 +51,14 @@ class TorchMetricEvaluator:
                  model: torch.nn.Module,
                  metrics: Dict[str, Callable[[np.ndarray, np.ndarray], float]],
                  device: torch.device,
-                 need_argmax:bool=False):
+                 need_argmax:bool=False,
+                 need_softmax:bool=False):
         self.generator = generator
         self.model=model
         self.metrics = metrics
         self.device=device
         self.need_argmax=need_argmax
+        self.need_softmax=need_softmax
 
     def __call__(self) -> Dict[str, float]:
         with torch.no_grad():
@@ -61,6 +70,9 @@ class TorchMetricEvaluator:
                 data, labels = data.to(self.device), labels.to(self.device)
                 # forward pass
                 outputs = self.model(data)
+                # apply softmax to the outputs if needed
+                if self.need_softmax:
+                    outputs = torch.softmax(outputs, dim=-1)
                 # apply argmax to the outputs if needed
                 if self.need_argmax:
                     outputs = torch.argmax(outputs, dim=-1)
