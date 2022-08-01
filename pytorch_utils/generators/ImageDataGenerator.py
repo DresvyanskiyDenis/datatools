@@ -20,10 +20,11 @@ class ImageDataLoader(Dataset):
                  augment:bool=False, augmentation_functions:Dict[Callable, float]=None):
         self.labels = labels
         self.img_paths = paths_to_images
-        self.paths_prefix = paths_prefix
+
         self.preprocessing_functions = preprocessing_functions
         self.augment = augment
         self.augmentation_functions = augmentation_functions
+        self.paths_prefix = '' if paths_prefix is None else paths_prefix
 
     def __len__(self):
         return self.labels.shape[0]
@@ -31,10 +32,10 @@ class ImageDataLoader(Dataset):
 
     def __getitem__(self, idx):
         image = read_image(os.path.join(self.paths_prefix, self.img_paths.iloc[idx, 0]))
-        image = self.preprocess_image(image)
         if self.augment:
             image = self.augmentation(image)
-        label = self.labels.iloc[idx, 0]
+        image = self.preprocess_image(image)
+        label = self.labels.iloc[idx].values
         return image, label
 
     def preprocess_image(self, image:torch.Tensor)->torch.Tensor:
