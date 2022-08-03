@@ -52,13 +52,15 @@ class TorchMetricEvaluator:
                  metrics: Dict[str, Callable[[np.ndarray, np.ndarray], float]],
                  device: torch.device,
                  need_argmax:bool=False,
-                 need_softmax:bool=False):
+                 need_softmax:bool=False,
+                 loss_func:Optional=None):
         self.generator = generator
         self.model=model
         self.metrics = metrics
         self.device=device
         self.need_argmax=need_argmax
         self.need_softmax=need_softmax
+        self.loss_func=loss_func
 
     def __call__(self) -> Dict[str, float]:
         with torch.no_grad():
@@ -66,10 +68,17 @@ class TorchMetricEvaluator:
             # and then calculate metrics once for the whole dataset
             predicted_labels = []
             real_labels = []
+            # if needed to return loss
+            loss=0
+            counter=0
             for data, labels in self.generator:
+                labels = torch.squeeze(labels).long()
                 data, labels = data.to(self.device), labels.to(self.device)
                 # forward pass
                 outputs = self.model(data)
+                if self.loss_func is not None:
+                    loss+=self.loss_func(outputs, labels).item()
+                    counter+=1
                 # apply softmax to the outputs if needed
                 if self.need_softmax:
                     outputs = torch.softmax(outputs, dim=-1)
@@ -80,10 +89,14 @@ class TorchMetricEvaluator:
                 predicted_labels.append(outputs.cpu().numpy().squeeze())
                 real_labels.append(labels.cpu().numpy().squeeze())
             # flatten the arrays so that we can calculate metrics
-            real_labels=np.array(real_labels).flatten()
-            predicted_labels=np.array(predicted_labels).flatten()
+            real_labels=np.concatenate(real_labels).flatten()
+            predicted_labels=np.concatenate(predicted_labels).flatten()
             # calculate all defined metrics
             results = {}
             for metric_name, metric_func in self.metrics.items():
                 results[metric_name] = metric_func(real_labels, predicted_labels)
+            # calculate total loss if specified
+            if self.loss_func is not None:
+                loss/=counter
+                results['loss']=loss
             return results
