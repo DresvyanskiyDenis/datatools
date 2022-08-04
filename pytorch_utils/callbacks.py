@@ -22,7 +22,6 @@ class TorchEarlyStopping:
 
     def __call__(self, epoch_loss: float, model: torch.nn.Module) -> bool:
         if self.compare_operator(epoch_loss, self.best_loss):
-            # TODO: check it
             self.best_loss = epoch_loss
             self.counter = 0
             if self.verbose:
@@ -32,7 +31,7 @@ class TorchEarlyStopping:
         elif self.counter <= self.patience:
             self.counter += 1
             if self.verbose:
-                print("Early stopping counter has been increased.")
+                print("Early stopping counter has been increased. Current value: %d" % self.counter)
             return False
         else:
             if self.verbose:
