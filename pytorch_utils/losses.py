@@ -53,18 +53,7 @@ class FocalLoss(nn.Module):
         return f'{type(self).__name__}({arg_str})'
 
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
-        if x.ndim > 2:
-            # (N, C, d1, d2, ..., dK) --> (N * d1 * ... * dK, C)
-            c = x.shape[1]
-            x = x.permute(0, *range(2, x.ndim), 1).reshape(-1, c)
-            # (N, d1, d2, ..., dK) --> (N * d1 * ... * dK,)
-            y = y.view(-1)
 
-        unignored_mask = y != self.ignore_index
-        y = y[unignored_mask]
-        if len(y) == 0:
-            return torch.tensor(0.)
-        x = x[unignored_mask]
 
         # compute weighted cross entropy term: -alpha * log(pt)
         # (alpha is already part of self.nll_loss)
@@ -88,3 +77,72 @@ class FocalLoss(nn.Module):
             loss = loss.sum()
 
         return loss
+
+
+class SoftFocalLoss(nn.Module):
+    # focal loss for soft targets, i. e. target can be [0, 0.3, 0.7, 1]
+    # class FocalLoss takes only digit targets
+    def __init__(self,
+                 softmax: bool,
+                 alpha: Optional[Tensor] = None,
+                 gamma: float = 0.):
+
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.softmax = softmax
+
+    def __repr__(self):
+        arg_keys = ['alpha', 'gamma']
+        arg_vals = [self.__dict__[k] for k in arg_keys]
+        arg_strs = [f'{k}={v}' for k, v in zip(arg_keys, arg_vals)]
+        arg_str = ', '.join(arg_strs)
+        return f'{type(self).__name__}({arg_str})'
+
+    def forward(self, x: Tensor, y: Tensor) -> Tensor:
+
+        if self.softmax:
+            p = F.softmax(x, dim=-1)
+        else:
+            p = x
+
+        epsilon = 1e-7
+        p = torch.clip(p, epsilon, 1. - epsilon)
+
+        cross_entropy = -y * torch.log(p)
+
+        # focal loss
+        loss = self.alpha * torch.pow(1. - p, self.gamma) * cross_entropy
+
+        loss = torch.sum(loss, dim =-1).mean()
+
+        return loss
+
+
+if __name__=="__main__":
+    import numpy as np
+    focal_loss=SoftFocalLoss(softmax=True, alpha=torch.Tensor([0.5, 0.3, 0.2]), gamma=2)
+    y_true=torch.Tensor(np.array([[0,0,1],
+                     [1,0,0],
+                     [1,0,0],
+                     [0,1,0],
+                     [0,0,1]
+                     ]))
+    predictions=torch.Tensor(np.array([[0,0.35,0.65],
+                     [0.3,0.6,0.1],
+                     [0.7,0.3,0],
+                     [0.1,0.54,0.36],
+                     [0,0,1]
+                     ]))
+    print(focal_loss(predictions, y_true))
+
+    focal_loss = FocalLoss(alpha=torch.Tensor([0.5, 0.3, 0.2]), gamma=2)
+    y_true = torch.Tensor([2,0,0,1,2])
+    y_pred = torch.Tensor(np.array([[0,0.35,0.65],
+                     [0.3,0.6,0.1],
+                     [0.7,0.3,0],
+                     [0.1,0.54,0.36],
+                     [0,0,1]
+                     ]))
+
+    print(focal_loss(predictions, y_true.long()))
