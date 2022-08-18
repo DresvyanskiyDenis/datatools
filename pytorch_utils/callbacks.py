@@ -4,6 +4,8 @@ import torch
 import numpy as np
 import os
 
+from decorators.common_decorators import timer
+
 
 class TorchEarlyStopping:
 
@@ -40,6 +42,8 @@ class TorchEarlyStopping:
             return True
 
     def _save_model(self, model: torch.nn.Module):
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path, exist_ok=True)
         torch.save(model.state_dict(), os.path.join(self.save_path, "best_model.pt"))
         print(f"Saved model to {self.save_path}")
 
@@ -50,17 +54,20 @@ class TorchMetricEvaluator:
                  model: torch.nn.Module,
                  metrics: Dict[str, Callable[[np.ndarray, np.ndarray], float]],
                  device: torch.device,
-                 need_argmax:bool=False,
-                 need_softmax:bool=False,
+                 output_argmax:bool=False,
+                 output_softmax:bool=False,
+                 labels_argmax:bool=False,
                  loss_func:Optional=None):
         self.generator = generator
         self.model=model
         self.metrics = metrics
         self.device=device
-        self.need_argmax=need_argmax
-        self.need_softmax=need_softmax
+        self.output_argmax=output_argmax
+        self.output_softmax=output_softmax
+        self.labels_argmax = labels_argmax
         self.loss_func=loss_func
 
+    @timer
     def __call__(self) -> Dict[str, float]:
         with torch.no_grad():
             # create "general" arrays for real and predicted labels so that we can firstly predict labels (and save real labels)
@@ -71,19 +78,23 @@ class TorchMetricEvaluator:
             loss=0
             counter=0
             for data, labels in self.generator:
-                labels = torch.squeeze(labels).long()
+                #labels = torch.squeeze(labels).long()
                 data, labels = data.to(self.device), labels.to(self.device)
+
                 # forward pass
                 outputs = self.model(data)
                 if self.loss_func is not None:
                     loss+=self.loss_func(outputs, labels).item()
                     counter+=1
                 # apply softmax to the outputs if needed
-                if self.need_softmax:
+                if self.output_softmax:
                     outputs = torch.softmax(outputs, dim=-1)
                 # apply argmax to the outputs if needed
-                if self.need_argmax:
+                if self.output_argmax:
                     outputs = torch.argmax(outputs, dim=-1)
+                # apply argmax to the labels if needed
+                if self.labels_argmax:
+                    labels = torch.argmax(labels, dim=-1)
                 # append predicted labels and real labels to the "general" array
                 predicted_labels.append(outputs.cpu().numpy().squeeze())
                 real_labels.append(labels.cpu().numpy().squeeze())
