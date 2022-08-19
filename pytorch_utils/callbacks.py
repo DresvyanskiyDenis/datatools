@@ -70,6 +70,8 @@ class TorchMetricEvaluator:
     @timer
     def __call__(self) -> Dict[str, float]:
         with torch.no_grad():
+            # turn model to the evaluation mode
+            self.model.eval()
             # create "general" arrays for real and predicted labels so that we can firstly predict labels (and save real labels)
             # and then calculate metrics once for the whole dataset
             predicted_labels = []
@@ -78,7 +80,9 @@ class TorchMetricEvaluator:
             loss=0
             counter=0
             for data, labels in self.generator:
-                #labels = torch.squeeze(labels).long()
+                # transform labels to the 1D array with long type if they are just digits (numbers of classes)
+                if not self.labels_argmax:
+                    labels = torch.squeeze(labels).long()
                 data, labels = data.to(self.device), labels.to(self.device)
 
                 # forward pass
@@ -109,4 +113,6 @@ class TorchMetricEvaluator:
             if self.loss_func is not None:
                 loss/=counter
                 results['loss']=loss
-            return results
+        # turn model back to the train mode
+        self.model.train()
+        return results
