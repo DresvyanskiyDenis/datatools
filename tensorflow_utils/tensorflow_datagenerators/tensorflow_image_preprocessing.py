@@ -17,6 +17,7 @@ __credits__ = ["Denis Dresvyanskiy"]
 __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
+from typing import Optional
 
 import tensorflow as tf
 
@@ -38,10 +39,13 @@ def preprocess_data_Xception(images:tf.Tensor, labels):
     return images, labels
 
 @tf.function
-def preprocess_data_Xception(images:tf.Tensor, labels):
+def preprocess_data_Xception(images:tf.Tensor, labels:Optional=None):
     images=tf.image.resize(images, [299, 299], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     images=tf.keras.applications.xception.preprocess_input(images)
+    if labels is None:
+        return images
     return images, labels
+
 
 @tf.function
 def preprocess_data_MobileNetv3(images:tf.Tensor, labels):
