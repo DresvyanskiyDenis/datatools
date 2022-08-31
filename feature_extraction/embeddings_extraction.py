@@ -94,7 +94,7 @@ def extract_deep_embeddings_from_images_in_dir(path_to_dir:str, extractor:tf.ker
     return embeddings
 
 
-def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extractor:tf.keras.Model, output_dir:str,
+def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extractor:tf.keras.Model, output_dir:str, output_filename:str,
                                               batch_size: int = 16,
                                               preprocessing_functions: Tuple[Callable[[np.ndarray], np.ndarray], ...] = None,
                                               include_labels:bool =False
@@ -131,7 +131,7 @@ def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extr
     # create dataframe for saving features
     extracted_deep_embeddings = pd.DataFrame(columns=columns)
     # save the "template" csv file to append to it in future
-    extracted_deep_embeddings.to_csv(os.path.join(output_dir, 'extracted_deep_embeddings.csv'), index=False)
+    extracted_deep_embeddings.to_csv(os.path.join(output_dir, output_filename), index=False)
 
     # load batch_size images and then predict them
     for extraction_idx, filename_idx in enumerate(range(0, paths_to_images.shape[0], batch_size)):
@@ -154,10 +154,11 @@ def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extr
                                                           extracted_emb], axis=1),
                                      columns=columns)
         # append them to the already extracted ones
-        extracted_deep_embeddings = extracted_deep_embeddings.append(extracted_emb, ignore_index=True)
+        #extracted_deep_embeddings = extracted_deep_embeddings.append(extracted_emb, ignore_index=True)
+        extracted_deep_embeddings = pd.concat([extracted_deep_embeddings, extracted_emb], axis=0, ignore_index=True)
         # dump the extracted data to the file
         if extraction_idx % 1000 == 0:
-            extracted_deep_embeddings.to_csv(os.path.join(output_dir, 'extracted_deep_embeddings.csv'), index=False,
+            extracted_deep_embeddings.to_csv(os.path.join(output_dir,output_filename), index=False,
                                              header=False, mode="a")
             # clear RAM
             extracted_deep_embeddings=pd.DataFrame(columns=columns)
@@ -165,5 +166,5 @@ def extract_deep_embeddings_from_images_in_df(paths_to_images:pd.DataFrame, extr
         del loaded_images
         gc.collect()
     # dump remaining data to the file
-    extracted_deep_embeddings.to_csv(os.path.join(output_dir, 'extracted_deep_embeddings.csv'), index=False,
+    extracted_deep_embeddings.to_csv(os.path.join(output_dir, output_filename), index=False,
                                      header=False, mode="a")
