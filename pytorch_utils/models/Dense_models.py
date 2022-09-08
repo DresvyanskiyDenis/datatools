@@ -11,7 +11,7 @@ __email__ = "denis.dresvyanskiy@uni-ulm.de"
 from typing import Tuple, Optional, Union
 
 import torch
-from torchsummary import summary
+
 
 
 class DenseModel(torch.nn.Module):
@@ -19,6 +19,8 @@ class DenseModel(torch.nn.Module):
                                     'sigmoid': torch.nn.Sigmoid,
                                     'tanh': torch.nn.Tanh,
                                     'softmax': torch.nn.Softmax,
+                                    'elu': torch.nn.ELU,
+                                    'leaky_relu': torch.nn.LeakyReLU,
                                     'linear': None
                                     }
 
@@ -61,22 +63,3 @@ class DenseModel(torch.nn.Module):
             pass
         else:
             self.layers.append(self.activation_functions_mapping[self.activation_function_for_output]())
-
-
-
-if __name__ == '__main__':
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using {device} device")
-    model = DenseModel(input_shape=100, dense_neurons=(200, 300, 500), activations=('relu', 'sigmoid', 'tanh'),
-                    dropout= 0.3,
-                    output_neurons= 4,
-                    activation_function_for_output='softmax').to(device)
-
-    print('model structure:')
-    print(model)
-    print('-----------------------------------')
-    print('model summary:')
-    print(summary(model, (100,)))
-    print('-----------------------------------')
-    print('net parameters:')
-    print(list(model.parameters()))
