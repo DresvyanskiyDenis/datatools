@@ -83,6 +83,7 @@ class TorchMetricEvaluator:
                 # transform labels to the 1D array with long type if they are just digits (numbers of classes)
                 if not self.labels_argmax:
                     labels = torch.squeeze(labels).long()
+                data = data.float()
                 data, labels = data.to(self.device), labels.to(self.device)
 
                 # forward pass
