@@ -4,6 +4,8 @@ import torch
 import numpy as np
 import os
 
+from torch.autograd import Variable
+
 from decorators.common_decorators import timer
 
 
@@ -57,7 +59,8 @@ class TorchMetricEvaluator:
                  output_argmax:bool=False,
                  output_softmax:bool=False,
                  labels_argmax:bool=False,
-                 loss_func:Optional=None):
+                 loss_func:Optional=None,
+                 separate_inputs:bool=False):
         self.generator = generator
         self.model=model
         self.metrics = metrics
@@ -66,6 +69,7 @@ class TorchMetricEvaluator:
         self.output_softmax=output_softmax
         self.labels_argmax = labels_argmax
         self.loss_func=loss_func
+        self.separete_inputs=separate_inputs
 
     @timer
     def __call__(self) -> Dict[str, float]:
@@ -83,11 +87,19 @@ class TorchMetricEvaluator:
                 # transform labels to the 1D array with long type if they are just digits (numbers of classes)
                 if not self.labels_argmax:
                     labels = torch.squeeze(labels).long()
-                data = data.float()
-                data, labels = data.to(self.device), labels.to(self.device)
+                if self.separete_inputs:
+                    data = [Variable(x.float()) for x in data]
+                    data = [x.to(self.device) for x in data]
+                else:
+                    data = data.float()
+                    data = data.to(self.device)
+                labels = labels.to(self.device)
 
                 # forward pass
-                outputs = self.model(data)
+                if self.separete_inputs:
+                    outputs = self.model(*data)
+                else:
+                    outputs = self.model(data)
                 if self.loss_func is not None:
                     loss+=self.loss_func(outputs, labels).item()
                     counter+=1
