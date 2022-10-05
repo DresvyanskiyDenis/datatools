@@ -69,7 +69,7 @@ class TorchMetricEvaluator:
         self.output_softmax=output_softmax
         self.labels_argmax = labels_argmax
         self.loss_func=loss_func
-        self.separete_inputs=separate_inputs
+        self.separate_inputs=separate_inputs
 
     @timer
     def __call__(self) -> Dict[str, float]:
@@ -87,7 +87,7 @@ class TorchMetricEvaluator:
                 # transform labels to the 1D array with long type if they are just digits (numbers of classes)
                 if not self.labels_argmax:
                     labels = torch.squeeze(labels).long()
-                if self.separete_inputs:
+                if self.separate_inputs:
                     data = [Variable(x.float()) for x in data]
                     data = [x.to(self.device) for x in data]
                 else:
@@ -96,7 +96,7 @@ class TorchMetricEvaluator:
                 labels = labels.to(self.device)
 
                 # forward pass
-                if self.separete_inputs:
+                if self.separate_inputs:
                     outputs = self.model(*data)
                 else:
                     outputs = self.model(data)
