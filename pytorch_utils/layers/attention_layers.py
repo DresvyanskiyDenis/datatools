@@ -66,13 +66,14 @@ class Add_and_Norm(nn.Module):
             self.dropout = nn.Dropout(dropout)
 
 
-    def forward(self, x1, x2):
-        # add and then norm
-        x = x1 + x2
-        x = self.layer_norm(x)
+    def forward(self, x1, residual):
+        x = x1
         # apply dropout of needed
         if hasattr(self, "dropout"):
             x = self.dropout(x)
+        # add and then norm
+        x = x + residual
+        x = self.layer_norm(x)
 
         return x
 
@@ -136,12 +137,12 @@ class EncoderLayer(nn.Module):
         # initialize layers
         self.self_attention = MultiHeadAttention(input_dim, num_heads, dropout=dropout)
         self.feed_forward = PositionWiseFeedForward(input_dim, input_dim, dropout=dropout)
-        self.norm_after_attention = nn.LayerNorm(input_dim)
-        self.norm_after_ff = nn.LayerNorm(input_dim)
+        self.add_norm_after_attention = Add_and_Norm(input_dim, dropout=dropout)
+        self.add_norm_after_ff = Add_and_Norm(input_dim, dropout=dropout)
 
         # calculate positional encoding
         if self.positional_encoding:
-            self.positional_encoding = PositionalEncoding1D(input_dim)
+            self.positional_encoding = PositionalEncoding(input_dim)
 
 
 
@@ -154,64 +155,20 @@ class EncoderLayer(nn.Module):
         # multi-head attention
         residual = x
         x = self.self_attention(x, x, x)
-        x = self.norm_after_attention(x + residual)
+        x = self.add_norm_after_attention(x, residual)
 
         # feed forward
         residual = x
         x = self.feed_forward(x)
-        x = self.norm_after_ff(x + residual)
+        x = self.add_norm_after_ff(x, residual)
 
         return x
-
-class PositionalEncoding1D(nn.Module):
-    # taken from: https://github.com/tatp22/multidim-positional-encoding/blob/master/positional_encodings/torch_encodings.py
-    def __init__(self, channels):
-        """
-        :param channels: The last dimension of the tensor you want to apply pos emb to.
-        """
-        super(PositionalEncoding1D, self).__init__()
-        self.org_channels = channels
-        channels = int(np.ceil(channels / 2) * 2)
-        self.channels = channels
-        inv_freq = 1.0 / (10000 ** (torch.arange(0, channels, 2).float() / channels))
-        self.register_buffer("inv_freq", inv_freq)
-        self.cached_penc = None
-
-    def forward(self, tensor):
-        """
-        :param tensor: A 3d tensor of size (batch_size, x, ch)
-        :return: Positional Encoding Matrix of size (batch_size, x, ch)
-        """
-        if len(tensor.shape) != 3:
-            raise RuntimeError("The input tensor has to be 3d!")
-
-        if self.cached_penc is not None and self.cached_penc.shape == tensor.shape:
-            return self.cached_penc
-
-        self.cached_penc = None
-        batch_size, x, orig_ch = tensor.shape
-        pos_x = torch.arange(x, device=tensor.device).type(self.inv_freq.type())
-        sin_inp_x = torch.einsum("i,j->ij", pos_x, self.inv_freq)
-        emb_x = self.get_emb(sin_inp_x)
-        emb = torch.zeros((x, self.channels), device=tensor.device).type(tensor.type())
-        emb[:, : self.channels] = emb_x
-
-        self.cached_penc = emb[None, :, :orig_ch].repeat(batch_size, 1, 1)
-        return self.cached_penc
-
-    def get_emb(self, sin_inp):
-        """
-        Gets a base embedding for one dimension with sin and cos intertwined
-        """
-        emb = torch.stack((sin_inp.sin(), sin_inp.cos()), dim=-1)
-        return torch.flatten(emb, -2, -1)
-
 
 
 
 class PositionalEncoding(nn.Module):
 
-    def __init__(self, d_model: int, dropout: float = 0.0, max_len: int = 5000):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -220,26 +177,15 @@ class PositionalEncoding(nn.Module):
         pe = torch.zeros(max_len, 1, d_model)
         pe[:, 0, 0::2] = torch.sin(position * div_term)
         pe[:, 0, 1::2] = torch.cos(position * div_term)
+        pe=pe.permute(1, 0, 2) # [seq_len, batch_size, embedding_dim] -> [batch_size, seq_len, embedding_dim]
         self.register_buffer('pe', pe)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+            x: Tensor, shape [batch_size, seq_len, embedding_dim]
         """
-        x = x + self.pe.permute(1,0,2)[:,:x.size(1)]
+        x = x + self.pe[:,:x.size(1)]
         return self.dropout(x)
 
-
-
-if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # test of multi-head attention
-    torch.manual_seed(12)
-    x = torch.randn(2, 10, 512).to(device)
-    pos_encoding = PositionalEncoding(512, max_len=10).to(device)
-    x = pos_encoding(x)
-    print(pos_encoding.pe)
-    print('----------')
-    print(x)
 
