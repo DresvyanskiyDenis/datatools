@@ -115,6 +115,9 @@ class TorchMetricEvaluator:
                 # append predicted labels and real labels to the "general" array
                 predicted_labels.append(outputs.cpu().numpy().squeeze())
                 real_labels.append(labels.cpu().numpy().squeeze())
+            # check the lists on the elements with 0 len shapes
+            predicted_labels = self._batch_check(predicted_labels)
+            real_labels = self._batch_check(real_labels)
             # flatten the arrays so that we can calculate metrics
             real_labels=np.concatenate(real_labels).flatten()
             predicted_labels=np.concatenate(predicted_labels).flatten()
@@ -129,3 +132,15 @@ class TorchMetricEvaluator:
         # turn model back to the train mode
         self.model.train()
         return results
+
+    def _batch_check(self, array):
+        # there are errors when the last batch of the dataset contains just one instance
+        # the error is that after the processing by model, the output of the model is one-element array,
+        # which automatically converts to the np-array with len of shape = 0
+        # therefore, when concatenation of the outputs happens, the np.concatenate() function
+        # cannot concat arrays with len of arrays shape equals 1 and 0 (at the end of the list)
+        # therefore, we need to check if the list contains arrays with 0 len shape and fix it by increasing it by one
+        for i, element in enumerate(array):
+            if len(element.shape) == 0:
+                array[i] = np.expand_dims(element, axis=0)
+        return array
