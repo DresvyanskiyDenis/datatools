@@ -20,10 +20,9 @@ import gc
 import os
 from typing import Optional, Tuple, Callable, List
 import tensorflow as tf
-import torch
 import numpy as np
 import pandas as pd
-import torchvision
+
 
 from preprocessing.data_preprocessing.image_preprocessing_utils import load_batch_of_images
 
