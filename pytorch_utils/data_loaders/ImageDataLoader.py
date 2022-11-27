@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from torchvision.io import read_image
 import torchvision.transforms as T
 
-from pytorch_utils.generators.pytorch_augmentations import pad_image_random_factor, grayscale_image, \
+from pytorch_utils.data_loaders.pytorch_augmentations import pad_image_random_factor, grayscale_image, \
     collor_jitter_image_random, gaussian_blur_image_random, random_perspective_image, random_rotation_image, \
     random_crop_image, random_posterize_image, random_adjust_sharpness_image, random_equalize_image, \
     random_horizontal_flip_image, random_vertical_flip_image
