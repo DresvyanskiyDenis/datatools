@@ -1,107 +1,73 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""Contains functions for face detection (recognition)
-
-Module contains functions for face recognition, using RetinaFace detector.
-RetinaFace: https://arxiv.org/abs/1905.00641
-
-List of functions:
-
-    * recognize_the_most_confident_person_retinaFace - recognizes the faces on provided image and returns the most confident
-        one (the face with the highest confidence)
-    * load_and_prepare_detector_retinaFace - loads and returns RetinaFace model
-    * extract_face_according_bbox - extracts (or crop) image according provided bounding box
-    * draw_faces - display provided face
+"""
+The RetinaFace model is taken from GutHub repositories https://github.com/adas-eye/retinaface
+and https://github.com/biubug6/Pytorch_Retinaface (main repository)
+Thanks to the authors for their work. For more details, please refer to the original repository.
+Do not forget to cite https://github.com/biubug6/Pytorch_Retinaface if you use RetinaFace in your work.
 """
 __author__ = "Denis Dresvyanskiy"
-__copyright__ = "Copyright 2021"
+__copyright__ = "Copyright 2022"
 __credits__ = ["Denis Dresvyanskiy"]
 __maintainer__ = "Denis Dresvyanskiy"
 __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
-from typing import Tuple
-import cv2
-from retinaface import RetinaFace
+from typing import List, Union
+from PIL import Image
 import numpy as np
+from feature_extraction.retinaface import RetinafaceDetector
 
-def _find_the_most_confident(detected_faces):
-    result_face = None
-    for key, face in detected_faces.items():
-        if result_face is None:
-            result_face = face
-        elif result_face['score'] < face['score']:
-            result_face = face
-    return result_face
+def load_and_prepare_detector_retinaFace_mobileNet():
+    """
+    Constructs and initializes RetinaFace model with Mobinet backbone
+    :return: RetinaFace model
+    """
+    model = RetinafaceDetector(net='mnet').detect_faces
+    return model
 
+def get_most_confident_person(recognized_faces:List[List[float]])->List[float]:
+    """
+    Finds the most confident face in the list of recognized faces
+    :param recognized_faces: List[List[float]]
+            List of faces, which were recognized by RetinaFace model
+    :return: List[float]
+            List of 5 floats, which represent the bounding box of face and its confidence
+    """
+    return max(recognized_faces, key=lambda x: x[4])
 
-
-def recognize_the_most_confident_person_retinaFace(im:np.ndarray, detector:object,
-                                                   threshold:float=0.5)->Tuple[int,...]:
-    """Recognizes the faces in provided image and return the face with the highest confidence.
-
-    :param im: np.ndarray
-            image represented by np.ndarray
+def recognize_one_face_bbox(img:Union[np.ndarray, str], detector:RetinafaceDetector.detect_faces)->List[float]:
+    """
+    Recognizes the faces in provided image and return the face with the highest confidence.
+    :param img: np.ndarray
+            image represented by np.ndarray or path to the image
     :param detector: object
             the model, which has method detect. It should return bounding boxes and landmarks.
     :param threshold: float
             adjustable parameter for recognizing if detected object is face or not.
-    :return: Tuple[int,...]
-            Tuple of 4 ints, which represent the bounding box of face
+    :return: List[float]
+            List of 5 floats, which represent the bounding box of face and its confidence
     """
-    result = detector.detect_faces(im)
-    # check if there are some found bboxes
-    if len(result)==0 or result is None:
+    if type(img) is str:
+        img = np.array(Image.open(img))
+    recognized_faces = detector(img)
+    if recognized_faces is None or len(recognized_faces) == 0:
         return None
-    if type(result) is tuple:
-        if result[0].shape[0]==0:
-            return None
-    # find the most confident face (hopefully, it is that, which we need)
-    most_conf_face = _find_the_most_confident(result)
-    # extract bounding box from the results
-    bbox = tuple(most_conf_face['facial_area'])
-    return bbox
+    return get_most_confident_person(recognized_faces)
 
-def load_and_prepare_detector_retinaFace()->object:
-    """Loads and prepare model RetinaFace
-
-    :return: object
-            RetinaFace TF model
+def extract_face_according_bbox(img:np.ndarray, bbox:List[float])->np.ndarray:
     """
-    model = RetinaFace
-    return model
-
-def extract_face_according_bbox(img:np.ndarray, bbox:Tuple[int,...])->np.ndarray:
-    """Extracts (crops) image according provided bounding box to get only face.
-
+    Extracts (crops) image according provided bounding box to get only face.
     :param img: np.ndarray
             image represented by np.ndarray
-    :param bbox: Tuple[int, ...]
-            Tuple of 4 ints, which represent the bounding box of face
+    :param bbox: List[float]
+            List of 5 floats, which represent the bounding box of face and its confidence
     :return: np.ndarray
-            Cropped image
-    """
-    x0, y0, x1, y1 = bbox
-    return img[y0:y1,x0:x1]
-
-
-def draw_faces(im:np.ndarray, bboxes:Tuple[Tuple[int,...],...])->None:
-    """Displays image with rectangled faces.
-
-    :param im: np.ndarray
             image represented by np.ndarray
-    :param bboxes:Tuple[Tuple[int,...],...]
-            Several bounding boxes to be displayed on image.
-    :return: None
     """
-    for bbox in bboxes:
-        x0, y0, x1, y1 = [int(_) for _ in bbox]
-        cv2.rectangle(im, (x0, y0), (x1, y1), (0, 0, 255), 2)
-
-if __name__ == '__main__':
-    model=load_and_prepare_detector_retinaFace()
-    im = cv2.imread(r"D:\Databases\DAiSEE\frames\1100011002\1100011002_frames\1100011002226.jpg")[:, :, ::-1]
-    im = np.array(im)
-    bbox=recognize_the_most_confident_person_retinaFace(im,model)
-    face=extract_face_according_bbox(im, bbox)
-    cv2.imwrite('img.jpg',face[:,:,::-1])
-
+    x1, y1, x2, y2 = bbox[:4]
+    # take a little more than the bounding box
+    x1,y1,x2,y2 = int(x1-10), int(y1-10), int(x2+10), int(y2+10)
+    # check if the bounding box is out of the image
+    x1 = max(x1,0)
+    y1 = max(y1,0)
+    x2 = min(x2,img.shape[1])
+    y2 = min(y2,img.shape[0])
+    return img[y1:y2, x1:x2]
