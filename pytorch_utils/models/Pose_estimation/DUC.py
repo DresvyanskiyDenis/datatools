@@ -27,4 +27,4 @@ class DUC(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         x = self.pixel_shuffle(x)
-        return
+        return x
