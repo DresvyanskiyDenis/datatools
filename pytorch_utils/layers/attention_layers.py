@@ -120,10 +120,6 @@ class MultiHeadAttention(nn.Module):
 
         return out
 
-
-
-
-
 class EncoderLayer(nn.Module):
 
     def __init__(self, input_dim, num_heads, dropout:Optional[float]=0.1, positional_encoding:bool=True):
@@ -189,3 +185,45 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
+
+class Transformer_layer(nn.Module):
+
+    def __init__(self, input_dim, num_heads, dropout:Optional[float]=0.1, positional_encoding:bool=True):
+        super(Transformer_layer, self).__init__()
+        self.positional_encoding = positional_encoding
+        self.input_dim = input_dim
+        self.num_heads = num_heads
+        self.head_dim = input_dim // num_heads
+        self.dropout = dropout
+
+        # initialize layers
+        self.self_attention = MultiHeadAttention(input_dim, num_heads, dropout=dropout)
+        self.feed_forward = PositionWiseFeedForward(input_dim, input_dim, dropout=dropout)
+        self.add_norm_after_attention = Add_and_Norm(input_dim, dropout=dropout)
+        self.add_norm_after_ff = Add_and_Norm(input_dim, dropout=dropout)
+
+        # calculate positional encoding
+        if self.positional_encoding:
+            self.positional_encoding = PositionalEncoding(input_dim)
+
+
+
+    def forward(self, key, value, query, mask=None):
+        # key, value, and query shapes: [batch_size, seq_len, input_dim]
+        # positional encoding
+        if self.positional_encoding:
+            key = self.positional_encoding(key)
+            value = self.positional_encoding(value)
+            query = self.positional_encoding(query)
+
+        # multi-head attention
+        residual = query
+        x = self.self_attention(queries=query, keys=key, values=value, mask=mask)
+        x = self.add_norm_after_attention(x, residual)
+
+        # feed forward
+        residual = x
+        x = self.feed_forward(x)
+        x = self.add_norm_after_ff(x, residual)
+
+        return x
