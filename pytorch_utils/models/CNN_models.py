@@ -6,6 +6,7 @@ import torch
 from facenet_pytorch.models.inception_resnet_v1 import InceptionResnetV1
 from torch import nn
 from torchinfo import summary
+from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights
 
 from pytorch_utils.models.Pose_estimation import MobileNetV2
 
@@ -23,6 +24,7 @@ class Modified_InceptionResnetV1(nn.Module):
         # new layers instead of old two last ones
         self.embeddings_layer = nn.Linear(1792, dense_layer_neurons)
         self.embeddings_batchnorm = nn.BatchNorm1d(dense_layer_neurons, momentum=0.1, affine=True)
+        self.activation_embeddings_layer = nn.Tanh()
         if num_classes:
             self.classifier = nn.Linear(dense_layer_neurons, num_classes)
 
@@ -30,6 +32,7 @@ class Modified_InceptionResnetV1(nn.Module):
         x = self.model(x)
         x = self.embeddings_layer(x)
         x = self.embeddings_batchnorm(x)
+        x = self.activation_embeddings_layer(x)
         if self.num_classes:
             x = self.classifier(x)
         return x
@@ -50,11 +53,11 @@ class _Pose_Estimation_MobileNetV2(nn.Module):
         # 2. Use a 1x1 conv to get one unnormalized heatmap per location
         unnormalized_heatmaps = self.hm_conv(backbone_model_out)
         # 3. Normalize the heatmaps
-        heatmaps = dsntnn.flat_softmax(unnormalized_heatmaps)
+        #heatmaps = dsntnn.flat_softmax(unnormalized_heatmaps)
         # 4. Calculate the coordinates
         #coords = dsntnn.dsnt(heatmaps)
 
-        return heatmaps
+        return unnormalized_heatmaps
 
 
 class Modified_MobileNetV2_pose_estimation(nn.Module):
@@ -80,6 +83,7 @@ class Modified_MobileNetV2_pose_estimation(nn.Module):
         )
         self.embeddings_layer = nn.Linear(256, embeddings_layer_neurons)
         self.batchnorm = nn.BatchNorm1d(embeddings_layer_neurons, momentum=0.1, affine=True)
+        self.activation_embeddings = nn.Tanh()
 
 
     def forward(self, x):
@@ -88,23 +92,64 @@ class Modified_MobileNetV2_pose_estimation(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.embeddings_layer(x)
         x = self.batchnorm(x)
-        x = torch.tanh(x)
+        x = self.activation_embeddings(x)
         return x
 
 
+class Modified_MobileNetV3_large(nn.Module):
+
+    def __init__(self,pretrained:bool=True, embeddings_layer_neurons:int=256,
+                 num_classes:Optional[int]=None, num_regression_neurons:Optional[int]=None):
+        super(Modified_MobileNetV3_large, self).__init__()
+
+        self.pretrained = pretrained
+        self.embeddings_layer_neurons = embeddings_layer_neurons
+        self.num_classes = num_classes
+        self.num_regression_neurons = num_regression_neurons
+        if pretrained:
+            weights = MobileNet_V3_Large_Weights.IMAGENET1K_V1
+        else:
+            weights = None
+        self.model = mobilenet_v3_large(weights=weights)
+        self.model.classifier = nn.Identity()
+        self.embeddings_layer = nn.Linear(960, embeddings_layer_neurons)
+        self.batchnorm = nn.BatchNorm1d(embeddings_layer_neurons, momentum=0.1, affine=True)
+        self.activation_embeddings = nn.Tanh()
+        if num_classes:
+            self.classifier = nn.Linear(embeddings_layer_neurons, num_classes)
+        if num_regression_neurons:
+            self.regression = nn.Linear(embeddings_layer_neurons, num_regression_neurons)
 
 
+    def forward(self, x):
+        x = self.model(x)
+        x = self.embeddings_layer(x)
+        x = self.batchnorm(x)
+        x = self.activation_embeddings(x)
+        output = ()
+
+        if self.num_classes:
+            x_classification = self.classifier(x)
+            output += (x_classification,)
+        if self.num_regression_neurons:
+            x_regression = self.regression(x)
+            output += (x_regression,)
+
+        if len(output) == 0:
+            return x
+        elif len(output) == 1:
+            return output[0]
+        else:
+            return output
 
 
 if __name__=='__main__':
-    model = Modified_MobileNetV2_pose_estimation(n_locations=16, pretrained=True)
+    model = Modified_MobileNetV3_large(embeddings_layer_neurons=256, num_classes=8, num_regression_neurons=2)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     x = np.zeros((2,3,224,224))
-    x = torch.from_numpy(x).float().to(device)
-    y = model(x)
-    print(y.shape)
-    summary(model, input_size=(2, 3, 224, 224))
+    summary(model, input_size=(2,3,224,224), device=device)
+
 
 
 
