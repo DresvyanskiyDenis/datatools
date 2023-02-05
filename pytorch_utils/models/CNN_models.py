@@ -11,7 +11,7 @@ from pytorch_utils.models.Pose_estimation import MobileNetV2
 
 
 class Modified_InceptionResnetV1(nn.Module):
-    def __init__(self, dense_layer_neurons:int, num_classes:int, pretrained='vggface2', device:torch.device=None):
+    def __init__(self, dense_layer_neurons:int, num_classes:Optional[int], pretrained='vggface2', device:torch.device=None):
         super(Modified_InceptionResnetV1, self).__init__()
         self.pretrained = pretrained
         self.num_classes = num_classes
@@ -23,13 +23,15 @@ class Modified_InceptionResnetV1(nn.Module):
         # new layers instead of old two last ones
         self.embeddings_layer = nn.Linear(1792, dense_layer_neurons)
         self.embeddings_batchnorm = nn.BatchNorm1d(dense_layer_neurons, momentum=0.1, affine=True)
-        self.classifier = nn.Linear(dense_layer_neurons, num_classes)
+        if num_classes:
+            self.classifier = nn.Linear(dense_layer_neurons, num_classes)
 
     def forward(self, x):
         x = self.model(x)
         x = self.embeddings_layer(x)
         x = self.embeddings_batchnorm(x)
-        x = self.classifier(x)
+        if self.num_classes:
+            x = self.classifier(x)
         return x
 
 
@@ -56,41 +58,37 @@ class _Pose_Estimation_MobileNetV2(nn.Module):
 
 
 class Modified_MobileNetV2_pose_estimation(nn.Module):
-    def __init__(self, n_locations=16, pretrained:bool=True):
+    def __init__(self, n_locations=16, pretrained:bool=True, embeddings_layer_neurons:int=256):
         super(Modified_MobileNetV2_pose_estimation, self).__init__()
 
         self.model = _Pose_Estimation_MobileNetV2(n_locations=n_locations)
+        self.embeddings_layer_neurons = embeddings_layer_neurons
         path_to_weights = "/work/home/dsu/Model_weights/Pose_estimation/MobileNetV2/mobilenetv2_224_adam_best.t7"
         if pretrained:
             self.model.load_state_dict(torch.load(path_to_weights))
         # stack 2D conv layers upon heatmaps
         self.stacked_conv = nn.Sequential(
-            nn.Conv2d(in_channels=n_locations, out_channels=32, kernel_size=3, padding=1), # 32x56x56
-            nn.BatchNorm2d(32, momentum=0.1),
+            nn.Conv2d(in_channels=n_locations, out_channels=128, kernel_size=3, padding=1), # 128x56x56
+            nn.BatchNorm2d(128, momentum=0.1),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2), # 32x28x28
+            nn.AvgPool2d(kernel_size=4, stride=4), # 128x14x14
 
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1), # 64x28x28
-            nn.BatchNorm2d(64, momentum=0.1),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1), # 256x14x14
+            nn.BatchNorm2d(256, momentum=0.1),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2), # 64x14x14
-
-            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=3, padding=1), # 32x14x14
-            nn.BatchNorm2d(32, momentum=0.1),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2), # 32x7x7
-
-            nn.Conv2d(in_channels=32, out_channels=16, kernel_size=3, padding=1), # 16x7x7
-            nn.BatchNorm2d(16, momentum=0.1),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1,1)) # 16x1x1
+            nn.AdaptiveAvgPool2d((1,1)) # 256x1x1
         )
+        self.embeddings_layer = nn.Linear(256, embeddings_layer_neurons)
+        self.batchnorm = nn.BatchNorm1d(embeddings_layer_neurons, momentum=0.1, affine=True)
 
 
     def forward(self, x):
         heatmaps = self.model(x)
         x = self.stacked_conv(heatmaps)
         x = x.view(x.size(0), -1)
+        x = self.embeddings_layer(x)
+        x = self.batchnorm(x)
+        x = torch.tanh(x)
         return x
 
 
@@ -102,11 +100,11 @@ if __name__=='__main__':
     model = Modified_MobileNetV2_pose_estimation(n_locations=16, pretrained=True)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    x = np.zeros((1,3,224,224))
+    x = np.zeros((2,3,224,224))
     x = torch.from_numpy(x).float().to(device)
     y = model(x)
     print(y.shape)
-    summary(model, input_size=(1, 3, 224, 224))
+    summary(model, input_size=(2, 3, 224, 224))
 
 
 
