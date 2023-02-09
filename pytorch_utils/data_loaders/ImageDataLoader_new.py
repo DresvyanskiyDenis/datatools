@@ -55,3 +55,6 @@ class ImageDataLoader(Dataset):
             if torch.rand(1) < prob:
                 image = func(image)
         return image
+
+    def get_num_classes(self)->int:
+        return self.labels.shape[1]
