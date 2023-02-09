@@ -107,7 +107,7 @@ class Modified_MobileNetV3_large(nn.Module):
         self.num_classes = num_classes
         self.num_regression_neurons = num_regression_neurons
         if pretrained:
-            weights = MobileNet_V3_Large_Weights.IMAGENET1K_V1
+            weights = MobileNet_V3_Large_Weights.IMAGENET1K_V2
         else:
             weights = None
         self.model = mobilenet_v3_large(weights=weights)
@@ -150,6 +150,8 @@ if __name__=='__main__':
     x = np.zeros((2,3,224,224))
     summary(model, input_size=(2,3,224,224), device=device)
 
+
+    MobileNet_V3_Large_Weights.IMAGENET1K_V2.transforms
 
 
 
