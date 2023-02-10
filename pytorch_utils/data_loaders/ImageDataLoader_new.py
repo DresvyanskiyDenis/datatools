@@ -41,14 +41,13 @@ class ImageDataLoader(Dataset):
         if self.augmentation_functions:
             image = self.augmentation(image)
         image = self.preprocess_image(image)
-        label = self.labels.iloc[idx].values
+        label = self.labels.iloc[idx].values.astype(np.float32)
         return image, label
 
     def preprocess_image(self, image:torch.Tensor)->torch.Tensor:
         for func in self.preprocessing_functions:
             image = func(image)
         return image
-
 
     def augmentation(self, image:torch.Tensor)->torch.Tensor:
         for func, prob in self.augmentation_functions.items():
