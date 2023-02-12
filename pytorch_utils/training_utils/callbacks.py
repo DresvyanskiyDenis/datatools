@@ -1,10 +1,11 @@
-from typing import Iterable, Tuple, Dict, Callable, Optional
+from typing import Iterable, Tuple, Dict, Callable, Optional, List
 
 import torch
 import numpy as np
 import os
 
 from torch.autograd import Variable
+from torchinfo import summary
 
 from decorators.common_decorators import timer
 
@@ -144,3 +145,89 @@ class TorchMetricEvaluator:
             if len(element.shape) == 0:
                 array[i] = np.expand_dims(element, axis=0)
         return array
+
+
+class GradualLayersUnfreezer():
+
+    def __init__(self, model:torch.nn.Module, layers:List[torch.nn.Module],
+                 layers_per_epoch:int,
+                 layers_to_unfreeze_before_start:Optional[int]=None,
+                 verbose:bool=False, input_shape:Optional[Tuple[int, ...]]=None):
+        """ Gradually unfreezes layers of the model with every __call__.
+        The layers are unfrozen in the following order: the last layer, the second last layer, etc.
+
+        :param model: torch.nn.Module
+                Pytorch model, which layers should be unfrozen over time
+        :param layers: List[torch.nn.Module]
+                List of the layers, which should be unfrozen over time
+        :param layers_per_epoch: int
+                Number of the layers, which should be unfrozen in every epoch
+        :param layers_to_unfreeze_before_start: int
+                Number of the layer (as an int number), which should be unfrozen before the training process starts
+        :param verbose: bool
+                If True, prints the information about the layers, which are unfrozen as well as the model structure
+        :param input_shape: tuple
+                Shape of the input data. It is needed to create the dummy input for the model, if the verbose is True.
+        """
+        self.model=model
+        self.layers = layers
+        self.layers_per_epoch = layers_per_epoch
+        self.verbose=verbose
+        self.layers_to_unfreeze_before_start = layers_to_unfreeze_before_start
+        self.current_last_unfrozen_layer = len(self.layers)
+        self.input_shape = input_shape
+
+        # firstly, freeze all layers
+        self._freeze_all_layers()
+        # then, unfreeze layers, which should be unfrozen before the training process starts
+        if self.layers_to_unfreeze_before_start is not None:
+            self._unfreeze_next_layers(self.layers_to_unfreeze_before_start)
+            if self.verbose:
+                print("Current model structure and the number of params, which are unfrozen.")
+                summary(self.model, input_size=self.input_shape)
+
+
+
+    def __call__(self):
+        """
+         Unfreezes next self.layers_per_epoch layers of the model. It starts from the last layers and go
+         down to the first layers
+        :return: None
+        """
+        # check if we need to unfreeze the next layers
+        if self.current_last_unfrozen_layer > 0:
+            # unfreeze the next layers
+            print("Layer names:")
+            for num_layer, child in enumerate(self.layers):
+                if num_layer<self.current_last_unfrozen_layer and num_layer>=self.current_last_unfrozen_layer - self.layers_per_epoch:
+                    print(child)
+            self._unfreeze_next_layers(self.layers_per_epoch)
+            if self.verbose:
+                print("Current model structure and trainable parameters:")
+                summary(self.model, input_size=self.input_shape)
+
+        else:
+            print("No layers has been unfrozen, since all layers are already unfrozen")
+
+
+    def _freeze_all_layers(self):
+        for child in self.layers:
+            for param in child.parameters():
+                param.requires_grad = False
+                param.requires_grad_(False)
+
+
+    def _unfreeze_next_layers(self, num_layers:int):
+        min_num_layer = max(0, self.current_last_unfrozen_layer - num_layers)
+        max_num_layer = self.current_last_unfrozen_layer
+        for num_layer, child in enumerate(self.layers):
+            # check if we are still in the range of layers, which should be unfrozen
+            if num_layer <= max_num_layer and num_layer >= min_num_layer:
+                if self.verbose:
+                    print(f"Unfreezing layer {child}...")
+                # unfreeze the layer
+                for param in child.parameters():
+                    param.requires_grad = True
+                    param.requires_grad_(True)
+        # update the number of the last unfrozen layer
+        self.current_last_unfrozen_layer = min_num_layer
