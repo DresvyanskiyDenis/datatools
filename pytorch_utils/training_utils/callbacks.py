@@ -231,3 +231,58 @@ class GradualLayersUnfreezer():
                     param.requires_grad_(True)
         # update the number of the last unfrozen layer
         self.current_last_unfrozen_layer = min_num_layer
+
+
+def gradually_decrease_lr(layers:List[torch.nn.Module], initial_lr:float,
+                          multiplicator:float, minimal_lr:float,
+                          step:Optional[int]=None, start_layer:Optional[int]=None)->List[torch.nn.Module.parameters]:
+    """ Gradually decreases the learning rate of the model layers from the start_layer to the first one using provided multiplicator.
+    If step is defined, the learning rate is decreased every step layers. If step is not defined, the learning rate is decreased.
+    If start_layer is not defined, the learning rate is decreased from the last layer to the first one.
+    """
+    # check if the start_layer is defined
+    if start_layer is None:
+        start_layer = len(layers) - 1
+    if start_layer < 0:
+        start_layer = len(layers) + start_layer
+    # check if the step is defined
+    if step is None:
+        step = 1
+    # start to change the lr for every layer. The parameters of these layers will be inserted into the parameters list
+    # and will be returned afterwards
+    parameters = []
+    # first of all, we set initial_lr to all layers before the start_layer. We start from the very last layer
+    for num_layer in range(len(layers), start_layer, -1):
+        params = []
+        for p in layers[num_layer].parameters():
+            if p.requires_grad:
+                params.append({'params': p,
+                               'lr': initial_lr
+                })
+        parameters.append(params)
+    # then, we gradually decrease the learning rate
+    new_lr = initial_lr
+    for num_layer in range(start_layer, -1, -step):
+        # check if the new_lr is not less than minimal_lr
+        new_lr = new_lr * multiplicator
+        if new_lr < minimal_lr:
+            new_lr = minimal_lr
+        # check if the end_layer is not less than 0
+        end_layer = num_layer - step
+        if end_layer < 0:
+            end_layer = 0
+        # decrease the lr
+        params = []
+        # since we have step parameter, we need to decrease the lr for the next step layers
+        # we iterate through all layers from the current layer to the layer with the index end layer = num_layer - step
+        for n in range(num_layer, end_layer, -1):
+            for p in layers[n].parameters():
+                if p.requires_grad:
+                    params.append({'params': p,
+                                   'lr': new_lr
+                                   })
+        # append acquired parameters with changed lr to the parameters list
+        parameters.append(params)
+    return parameters
+
+
