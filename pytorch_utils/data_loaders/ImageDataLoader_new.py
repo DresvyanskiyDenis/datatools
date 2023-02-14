@@ -11,7 +11,7 @@ from torchvision.io import read_image
 
 class ImageDataLoader(Dataset):
     def __init__(self, paths_with_labels:pd.DataFrame, preprocessing_functions:List[Callable]=None,
-                 augmentation_functions:Dict[Callable, float]=None, shuffle:bool=True):
+                 augmentation_functions:Dict[Callable, float]=None, shuffle:bool=False):
         """Image data loader for PyTorch models. Apart from the loading on-the-fly, it preprocesses and augments images if specified.
            paths_with_labels should be passed as a pandas DataFrame with following columns: ['path','label_0','label_1',...,'label_n'].
 
