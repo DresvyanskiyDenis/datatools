@@ -252,7 +252,7 @@ def gradually_decrease_lr(layers:List[torch.nn.Module], initial_lr:float,
     # and will be returned afterwards
     parameters = []
     # first of all, we set initial_lr to all layers before the start_layer. We start from the very last layer
-    for num_layer in range(len(layers), start_layer, -1):
+    for num_layer in range(len(layers)-1, start_layer, -1):
         params = []
         for p in layers[num_layer].parameters():
             if p.requires_grad:
@@ -270,7 +270,7 @@ def gradually_decrease_lr(layers:List[torch.nn.Module], initial_lr:float,
         # check if the end_layer is not less than 0
         end_layer = num_layer - step
         if end_layer < 0:
-            end_layer = 0
+            end_layer = -1
         # decrease the lr
         params = []
         # since we have step parameter, we need to decrease the lr for the next step layers
@@ -283,6 +283,11 @@ def gradually_decrease_lr(layers:List[torch.nn.Module], initial_lr:float,
                                    })
         # append acquired parameters with changed lr to the parameters list
         parameters.append(params)
+    # clear parameters from empty lists
+    parameters = [p for p in parameters if len(p) > 0]
+    # unpack list of lists
+    parameters = [item for sublist in parameters for item in sublist]
+    parameters = list(reversed(parameters))
     return parameters
 
 
