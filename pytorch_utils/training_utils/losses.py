@@ -119,6 +119,16 @@ class SoftFocalLoss(nn.Module):
         return loss
 
 
+class RMSELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = nn.MSELoss()
+
+    def forward(self, yhat, y):
+        return torch.sqrt(self.mse(yhat, y))
+
+
+
 if __name__=="__main__":
     import numpy as np
     focal_loss=SoftFocalLoss(softmax=True, alpha=torch.Tensor([0.5, 0.3, 0.2]), gamma=2)
