@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Optional
 
 import dsntnn
@@ -6,9 +7,11 @@ import torch
 from facenet_pytorch.models.inception_resnet_v1 import InceptionResnetV1
 from torch import nn
 from torchinfo import summary
-from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights
+from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights, EfficientNet_B1_Weights, efficientnet_b1
+from torchvision.transforms import InterpolationMode
 
 from pytorch_utils.models.Pose_estimation import MobileNetV2
+from pytorch_utils.models.input_preprocessing import EfficientNet_image_preprocessor, resize_image_saving_aspect_ratio
 
 
 class Modified_InceptionResnetV1(nn.Module):
@@ -142,16 +145,61 @@ class Modified_MobileNetV3_large(nn.Module):
         else:
             return output
 
+class Modified_EfficientNet_B1(nn.Module):
+
+    def __init__(self, pretrained:bool=True, embeddings_layer_neurons:int=256,
+                 num_classes:Optional[int]=None, num_regression_neurons:Optional[int]=None):
+        super(Modified_EfficientNet_B1, self).__init__()
+
+        self.pretrained = pretrained
+        self.embeddings_layer_neurons = embeddings_layer_neurons
+        self.num_classes = num_classes
+        self.num_regression_neurons = num_regression_neurons
+        if pretrained:
+            weights = EfficientNet_B1_Weights.IMAGENET1K_V2
+        else:
+            weights = None
+        self.model = efficientnet_b1(weights=weights)
+        self.model.classifier = nn.Identity()
+        self.embeddings_layer = nn.Linear(1280, embeddings_layer_neurons)
+        self.batchnorm = nn.BatchNorm1d(embeddings_layer_neurons, momentum=0.1, affine=True)
+        self.activation_embeddings = nn.Tanh()
+        if num_classes:
+            self.classifier = nn.Linear(embeddings_layer_neurons, num_classes)
+        if num_regression_neurons:
+            self.regression = nn.Linear(embeddings_layer_neurons, num_regression_neurons)
+
+    def forward(self, x):
+        x = self.model(x)
+        x = self.embeddings_layer(x)
+        x = self.batchnorm(x)
+        x = self.activation_embeddings(x)
+        output = ()
+
+        if self.num_classes:
+            x_classification = self.classifier(x)
+            output += (x_classification,)
+        if self.num_regression_neurons:
+            x_regression = self.regression(x)
+            output += (x_regression,)
+
+        if len(output) == 0:
+            return x
+        elif len(output) == 1:
+            return output[0]
+        else:
+            return output
+
+
+
+
 
 if __name__=='__main__':
-    model = Modified_MobileNetV3_large(embeddings_layer_neurons=256, num_classes=8, num_regression_neurons=2)
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    model = Modified_EfficientNet_B1(embeddings_layer_neurons=256, num_classes=8, num_regression_neurons=2)
+    device = torch.device('cpu')
     model.to(device)
-    x = np.zeros((2,3,224,224))
-    summary(model, input_size=(2,3,224,224), device=device)
+    summary(model, input_size=(2,3,240,240), device=device)
 
-
-    MobileNet_V3_Large_Weights.IMAGENET1K_V2.transforms
 
 
 
