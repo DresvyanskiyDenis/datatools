@@ -16,7 +16,7 @@ class EfficientNet_image_preprocessor(nn.Module):
     def __init__(
         self,
         *,
-        crop_size: int,
+        crop_size: int = 240,
         resize_size: int = 256,
         mean: Tuple[float, ...] = (0.485, 0.456, 0.406),
         std: Tuple[float, ...] = (0.229, 0.224, 0.225),
