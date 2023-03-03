@@ -5,7 +5,6 @@ import torch.nn as nn
 from PIL import Image
 from PIL.Image import Resampling
 from torch import Tensor
-from torchvision.transforms import InterpolationMode
 from torchvision.transforms import functional as F
 
 class EfficientNet_image_preprocessor(nn.Module):
@@ -13,53 +12,40 @@ class EfficientNet_image_preprocessor(nn.Module):
     The link to GitHub is: https://github.com/pytorch/vision
     It should be noted, that the forward function has been modified:
     The central cropping as well as resizing are omitted"""
-    def __init__(
-        self,
-        *,
-        crop_size: int = 240,
-        resize_size: int = 256,
-        mean: Tuple[float, ...] = (0.485, 0.456, 0.406),
-        std: Tuple[float, ...] = (0.229, 0.224, 0.225),
-        interpolation: InterpolationMode = InterpolationMode.BILINEAR,
-        antialias: Optional[Union[str, bool]] = "warn",
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.crop_size = [crop_size]
-        self.resize_size = [resize_size]
-        self.mean = list(mean)
-        self.std = list(std)
-        self.interpolation = interpolation
-        self.antialias = antialias
+        self.mean: Tuple[float, ...] = (0.485, 0.456, 0.406)
+        self.std: Tuple[float, ...] = (0.229, 0.224, 0.225)
 
     def forward(self, img: Tensor) -> Tensor:
         # the forward function is a little bit modified: the central cropping as well as resizing are omitted, since the
         # images we use in our training are already cropped and resized in saving-aspect-ratio way
-        #self.resize_size = self.crop_size
-        #img = F.resize(img, self.resize_size, interpolation=self.interpolation, antialias=self.antialias)
-        #img = F.center_crop(img, self.crop_size)
         if not isinstance(img, Tensor):
             img = F.pil_to_tensor(img)
         img = F.convert_image_dtype(img, torch.float)
         img = F.normalize(img, mean=self.mean, std=self.std)
         return img
 
-    def __repr__(self) -> str:
-        format_string = self.__class__.__name__ + "("
-        format_string += f"\n    crop_size={self.crop_size}"
-        format_string += f"\n    resize_size={self.resize_size}"
-        format_string += f"\n    mean={self.mean}"
-        format_string += f"\n    std={self.std}"
-        format_string += f"\n    interpolation={self.interpolation}"
-        format_string += "\n)"
-        return format_string
 
-    def describe(self) -> str:
-        return (
-            "Accepts ``PIL.Image``, batched ``(B, C, H, W)`` and single ``(C, H, W)`` image ``torch.Tensor`` objects. "
-            f"The images are resized to ``resize_size={self.resize_size}`` using ``interpolation={self.interpolation}``, "
-            f"followed by a central crop of ``crop_size={self.crop_size}``. Finally the values are first rescaled to "
-            f"``[0.0, 1.0]`` and then normalized using ``mean={self.mean}`` and ``std={self.std}``."
-        )
+
+class ViT_image_preprocessor(nn.Module):
+    """The class taken from the torchvision library for image preprocesing in case of using ViT models.
+    The link to GitHub is: https://github.com/pytorch/vision
+    It should be noted, that the forward function has been modified:
+    The central cropping as well as resizing are omitted"""
+    def __init__(self) -> None:
+        super().__init__()
+        self.mean: Tuple[float, ...] = (0.485, 0.456, 0.406)
+        self.std: Tuple[float, ...] = (0.229, 0.224, 0.225)
+
+    def forward(self, img: Tensor) -> Tensor:
+        # the forward function is a little bit modified: the central cropping as well as resizing are omitted, since the
+        # images we use in our training are already cropped and resized in saving-aspect-ratio way
+        if not isinstance(img, Tensor):
+            img = F.pil_to_tensor(img)
+        img = F.convert_image_dtype(img, torch.float)
+        img = F.normalize(img, mean=self.mean, std=self.std)
+        return img
 
 
 
