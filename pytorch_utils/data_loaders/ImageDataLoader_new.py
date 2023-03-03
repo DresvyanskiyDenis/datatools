@@ -38,8 +38,13 @@ class ImageDataLoader(Dataset):
 
     def __getitem__(self, idx):
         image = read_image(self.img_paths.iloc[idx, 0])
+        # turn grey image into RGB if needed
+        if image.shape[0] == 1:
+            image = image.repeat(3, 1, 1)
+        # apply augmentation if needed
         if self.augmentation_functions:
             image = self.augmentation(image)
+        # apply preprocessing
         image = self.preprocess_image(image)
         label = self.labels.iloc[idx].values.astype(np.float32)
         return image, label
