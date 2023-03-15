@@ -1,18 +1,13 @@
-from functools import partial
 from typing import Optional
 
-import dsntnn
-import numpy as np
 import torch
 from facenet_pytorch.models.inception_resnet_v1 import InceptionResnetV1
 from torch import nn
 from torchinfo import summary
 from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights, EfficientNet_B1_Weights, efficientnet_b1, \
-    EfficientNet_B6_Weights, efficientnet_b6, EfficientNet_B4_Weights, efficientnet_b4, ViT_B_16_Weights, vit_b_16
-from torchvision.transforms import InterpolationMode
+    EfficientNet_B4_Weights, efficientnet_b4, ViT_B_16_Weights, vit_b_16
 
 from pytorch_utils.models.Pose_estimation import MobileNetV2
-from pytorch_utils.models.input_preprocessing import EfficientNet_image_preprocessor, resize_image_saving_aspect_ratio
 
 
 class Modified_InceptionResnetV1(nn.Module):
@@ -295,18 +290,17 @@ class Modified_ViT_B_16(nn.Module):
                 return output
 
 
+
+
+
+
+
+
+
 if __name__=='__main__':
     model = Modified_ViT_B_16(embeddings_layer_neurons=256, num_classes=8, num_regression_neurons=2)
     device = torch.device('cpu')
     model.to(device)
     summary(model, input_size=(2,3,224,224), device=device)
-
-
-
-
-
-
-
-
 
 
