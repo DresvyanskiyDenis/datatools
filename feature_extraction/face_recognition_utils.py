@@ -15,12 +15,12 @@ from PIL import Image
 import numpy as np
 from feature_extraction.retinaface import RetinafaceDetector
 
-def load_and_prepare_detector_retinaFace_mobileNet():
+def load_and_prepare_detector_retinaFace_mobileNet(device:str):
     """
     Constructs and initializes RetinaFace model with Mobinet backbone
     :return: RetinaFace model
     """
-    model = RetinafaceDetector(net='mnet').detect_faces
+    model = RetinafaceDetector(net='mnet', type=device).detect_faces
     return model
 
 def get_most_confident_person(recognized_faces:List[List[float]])->List[float]:
