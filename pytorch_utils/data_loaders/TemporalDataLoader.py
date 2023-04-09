@@ -41,12 +41,15 @@ class TemporalDataLoader(Dataset):
         for key, windows in self.cut_windows.items():
             for window in windows:
                 self.pointers.append((key, window))
+        # shuffle pointers if needed
+        if self.shuffle:
+            np.random.shuffle(self.pointers)
 
 
 
     def __len__(self):
-        # len of the dataset is the sum of all windows
-        return sum([len(windows) for windows in self.cut_windows.values()])
+        # len of the dataset is the sum of all windows, but we can easily get it from the pointers
+        return len(self.pointers)
 
     def __getitem__(self, idx):
         # get the data and labels using pointer
