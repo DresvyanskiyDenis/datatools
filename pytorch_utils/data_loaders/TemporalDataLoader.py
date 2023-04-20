@@ -72,6 +72,10 @@ class TemporalDataLoader(Dataset):
         labels = torch.tensor(labels, dtype=torch.float32)
         return images, labels
 
+    def get_sequence_length(self):
+        """ Returns the length of the sequence. """
+        return self.pointers[0][1].shape[0]
+
 
     def __preprocess_image(self, image: torch.Tensor) -> torch.Tensor:
         for func in self.preprocessing_functions:
