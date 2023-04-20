@@ -9,7 +9,7 @@ Do not forget to thank the author for his work on the GitHub page of the library
 """
 
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
+from torch.optim.lr_scheduler import LRScheduler, ReduceLROnPlateau
 
 __all__ = ['VERSION', 'WarmUpScheduler']
 
@@ -51,7 +51,7 @@ class WarmUpScheduler(object):
         self.optimizer = optimizer
 
         # Attach lr_scheduler
-        if not isinstance(lr_scheduler, (_LRScheduler, ReduceLROnPlateau)):
+        if not isinstance(lr_scheduler, (LRScheduler, ReduceLROnPlateau)):
             raise TypeError(f'{type(lr_scheduler).__name__} is not a lr_scheduler in pytorch')
         self.lr_scheduler = lr_scheduler
 
