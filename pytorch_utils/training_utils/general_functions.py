@@ -23,7 +23,11 @@ def train_step(model: torch.nn.Module, criterions: List[torch.nn.Module],
         list of losses
     """
     # forward pass
+    if len(inputs) == 1:
+        inputs = inputs[0]
     outputs = model(inputs)
+    if isinstance(outputs, torch.Tensor):
+        outputs = [outputs]
     # checking input parameters
     if len(criterions) != len(outputs):
         raise ValueError("Number of criterions should be equal to number of outputs of the model.")
@@ -71,6 +75,10 @@ def train_epoch(model: torch.nn.Module, train_generator: torch.utils.data.DataLo
     for i, data in enumerate(train_generator):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
+        if not isinstance(inputs, list):
+            inputs = [inputs]
+        if not isinstance(labels, list):
+            labels = [labels]
         # move data to device
         inputs = [inp.float().to(device) for inp in inputs]
         labels = [lb.to(device) for lb in labels]
