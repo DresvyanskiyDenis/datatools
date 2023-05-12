@@ -4,7 +4,7 @@ from typing import Tuple, List, Optional
 import torch
 
 def train_step(model: torch.nn.Module, criterions: List[torch.nn.Module],
-               inputs: List[torch.Tensor, ...], ground_truth: List[torch.Tensor],
+               inputs: List[torch.Tensor], ground_truth: List[torch.Tensor],
                device: torch.device) -> List[torch.Tensor]:
     """ Performs one training step for a model.
 
