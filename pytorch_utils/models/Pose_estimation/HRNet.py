@@ -5,6 +5,7 @@ import torch
 from torch import nn
 
 from SimpleHRNet import SimpleHRNet
+from pytorch_utils.layers.conv_layers import ResidualBlock
 
 
 def _load_HRNet_model(device:str,
@@ -64,32 +65,12 @@ class Modified_HRNet(nn.Module):
     def _build_additional_layers(self):
         self.additional_layers = torch.nn.Sequential(
             OrderedDict([
-                # block 1
-                ("conv1_new", torch.nn.Conv2d(13, 128, kernel_size=(3, 3), stride=(1, 1), padding="same") if self.consider_only_upper_body
-                 else torch.nn.Conv2d(17, 128, kernel_size=(3, 3), stride=(1, 1), padding="same")
-                 ),
-                ("dropout1_new", torch.nn.Dropout(0.1)),
-                ("BatchNormalization1_new", torch.nn.BatchNorm2d(128)),
-                ("relu1_new", torch.nn.ReLU()),
-                ("maxpool1_new", torch.nn.MaxPool2d(kernel_size=2, stride=2)),  # 64x64
-                # block 2
-                ("conv2_new", torch.nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding="same")),
-                ("dropout2_new", torch.nn.Dropout(0.1)),
-                ("BatchNormalization2_new", torch.nn.BatchNorm2d(128)),
-                ("relu2_new", torch.nn.ReLU()),
-                ("maxpool2_new", torch.nn.MaxPool2d(kernel_size=2, stride=2)),  # 32x32
-                # block 3
-                ("conv3_new", torch.nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding="same")),
-                ("dropout3_new", torch.nn.Dropout(0.1)),
-                ("BatchNormalization3_new", torch.nn.BatchNorm2d(256)),
-                ("relu3_new", torch.nn.ReLU()),
-                ("maxpool3_new", torch.nn.MaxPool2d(kernel_size=2, stride=2)),  # 16x16
-                # block 4
-                ("conv4_new", torch.nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding="same")),
-                ("dropout4_new", torch.nn.Dropout(0.1)),
-                ("BatchNormalization4_new", torch.nn.BatchNorm2d(256)),
-                ("relu4_new", torch.nn.ReLU()),
-                ("maxpool4_new", torch.nn.MaxPool2d(kernel_size=2, stride=2)),  # 8x8
+                # Residual block 1
+                ("residual_block_1", ResidualBlock(13, 128, stride=2, downsample=True)),
+                # Residual block 2
+                ("residual_block_2", ResidualBlock(128, 128, stride=2, downsample=True)),
+                # Residual block 3
+                ("residual_block_3", ResidualBlock(128, 256, stride=2, downsample=True)),
                 # Global avg pool
                 ("globalpool_new", torch.nn.AdaptiveAvgPool2d(output_size=(1, 1))),
                 # Flatten
