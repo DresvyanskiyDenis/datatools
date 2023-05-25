@@ -40,7 +40,7 @@ def random_crop_image(image:torch.Tensor, cropping_factor_limits:Tuple[float, fl
     crop_factor = (cropping_factor_limits[0]- cropping_factor_limits[1])* torch.rand(1) + cropping_factor_limits[1]
     crop_shape = (int(old_shape[1]*crop_factor), int(old_shape[2]*crop_factor))
     image = T.RandomCrop(crop_shape)(image)
-    image = T.Resize(old_shape[1:])(image)
+    image = T.Resize(old_shape[1:], antialias=True)(image)
     return image
 
 def random_posterize_image(image:torch.Tensor)->torch.Tensor:
