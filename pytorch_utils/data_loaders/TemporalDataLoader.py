@@ -68,6 +68,8 @@ class TemporalDataLoader(Dataset):
             images = [self.__preprocess_image(image) for image in images]
         # stack images into one tensor. The output shape is (seq_len, channels, height, width)
         images = torch.stack(images)
+        # change type to float32
+        images = images.type(torch.float32)
         # turn labels into tensor
         labels = torch.tensor(labels, dtype=torch.float32)
         return images, labels
