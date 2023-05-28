@@ -1,6 +1,6 @@
 import os
 from functools import partial
-from typing import Callable, List, Dict
+from typing import Callable, List, Dict, Optional
 
 import pandas as pd
 import numpy as np
@@ -11,7 +11,8 @@ from torchvision.io import read_image
 
 class ImageDataLoader(Dataset):
     def __init__(self, paths_with_labels:pd.DataFrame, preprocessing_functions:List[Callable]=None,
-                 augmentation_functions:Dict[Callable, float]=None, shuffle:bool=False):
+                 augmentation_functions:Dict[Callable, float]=None, shuffle:bool=False,
+                 output_labels:Optional[bool]=True):
         """Image data loader for PyTorch models. Apart from the loading on-the-fly, it preprocesses and augments images if specified.
            paths_with_labels should be passed as a pandas DataFrame with following columns: ['path','label_0','label_1',...,'label_n'].
 
@@ -21,14 +22,20 @@ class ImageDataLoader(Dataset):
                 List of preprocessing functions, each function should take and output one image. Preferably torch.Tensor.
         :param augmentation_functions: Dict[Callable, float]
                 Dictionary of augmentation functions and probabilities of applying them. Each function should take and output one image. Preferably torch.Tensor.
+        :param shuffle: bool
+                Whether to shuffle data or not.
+        :param output_labels: Optional[bool]
+                Whether to output labels or not. If True, then __getitem__ will return image and label, else only image.
         """
         self.paths_with_labels = paths_with_labels
         # shuffle data if specified
         if shuffle:
             self.paths_with_labels = self.paths_with_labels.sample(frac=1).reset_index(drop=True)
+        self.output_labels = output_labels
         # divide paths_with_labels into paths and labels
         self.img_paths = self.paths_with_labels[['path']]
-        self.labels = self.paths_with_labels.drop(columns=['path'])
+        if self.output_labels:
+            self.labels = self.paths_with_labels.drop(columns=['path'])
         del self.paths_with_labels
         self.preprocessing_functions = preprocessing_functions
         self.augmentation_functions = augmentation_functions
@@ -46,8 +53,11 @@ class ImageDataLoader(Dataset):
             image = self.augmentation(image)
         # apply preprocessing
         image = self.preprocess_image(image)
-        label = self.labels.iloc[idx].values.astype(np.float32)
-        return image, label
+        if self.output_labels:
+            label = self.labels.iloc[idx].values.astype(np.float32)
+            return image, label
+        else:
+            return image
 
     def preprocess_image(self, image:torch.Tensor)->torch.Tensor:
         for func in self.preprocessing_functions:
