@@ -12,7 +12,7 @@ from torchvision.io import read_image
 class ImageDataLoader(Dataset):
     def __init__(self, paths_with_labels:pd.DataFrame, preprocessing_functions:List[Callable]=None,
                  augmentation_functions:Dict[Callable, float]=None, shuffle:bool=False,
-                 output_labels:Optional[bool]=True):
+                 output_labels:Optional[bool]=True, output_paths:Optional[bool]=False):
         """Image data loader for PyTorch models. Apart from the loading on-the-fly, it preprocesses and augments images if specified.
            paths_with_labels should be passed as a pandas DataFrame with following columns: ['path','label_0','label_1',...,'label_n'].
 
@@ -26,12 +26,15 @@ class ImageDataLoader(Dataset):
                 Whether to shuffle data or not.
         :param output_labels: Optional[bool]
                 Whether to output labels or not. If True, then __getitem__ will return image and label, else only image.
+        :param output_paths: Optional[bool]
+                Whether to output paths or not. If True, then __getitem__ will return path in addition to the overall output.
         """
         self.paths_with_labels = paths_with_labels
         # shuffle data if specified
         if shuffle:
             self.paths_with_labels = self.paths_with_labels.sample(frac=1).reset_index(drop=True)
         self.output_labels = output_labels
+        self.output_paths = output_paths
         # divide paths_with_labels into paths and labels
         self.img_paths = self.paths_with_labels[['path']]
         if self.output_labels:
@@ -53,11 +56,13 @@ class ImageDataLoader(Dataset):
             image = self.augmentation(image)
         # apply preprocessing
         image = self.preprocess_image(image)
+        output = [image]
         if self.output_labels:
             label = self.labels.iloc[idx].values.astype(np.float32)
-            return image, label
-        else:
-            return image
+            output = output + [label]
+        if self.output_paths:
+            output = output + [self.img_paths.iloc[idx, 0]]
+        return tuple(output)
 
     def preprocess_image(self, image:torch.Tensor)->torch.Tensor:
         for func in self.preprocessing_functions:
