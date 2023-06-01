@@ -44,11 +44,25 @@ class EmbeddingsExtractor():
         :param device: device to use. If None, then device will be equal to the torch.device('cuda') if available, else torch.device('cpu')
         """
         self.model = model
+        self.device = device
         if device is None:
             self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         # host model on device
         self.model.to(self.device)
         self.preprocessing_functions = preprocessing_functions
+        # get the output shape of the model
+        self.output_shape = self.__get_output_shape_model()
+
+
+    def __get_output_shape_model(self)->int:
+        tmp_idx = -1000
+        for i in range(len(self.model) - 1, -1, -1):
+            if hasattr(self.model[i], 'out_features'):
+                tmp_idx = i
+                break
+        if tmp_idx == -1000:
+            raise ValueError("Cannot find the output shape of the model. Probably, it has no linear layer.")
+        return self.model[tmp_idx].out_features
 
     def extract_embeddings(self, data: data_types, *, batch_size: Optional[int] = None,
                            num_workers: Optional[int] = None,
@@ -130,7 +144,7 @@ class EmbeddingsExtractor():
              If True, then prints the progress of extraction.
         :param output_path: Optional[str]
                 The path to save the embeddings. This should be the path to the csv file.
-        :return: Union[np.ndarray, torch.Tensor]
+        :return: None
         """
         if batch_size is None:
             batch_size = 1
@@ -169,12 +183,12 @@ class EmbeddingsExtractor():
         # To save the memory consumption, we will save the embeddings in the csv file batch-wise
         # create the list of columns names
         columns_names = ['path']
-        for i in range(self.model.output_dim):
+        for i in range(self.output_shape):
             columns_names.append('embedding_' + str(i))
         # extract embeddings batch-wise and save them first to dataframe, then dump to the csv file, and then clear
         # the dataframe
-        dump_counter = 0
-        batch_embeddings = None
+        # create empty csv file to dump the columns names
+        pd.DataFrame(columns=columns_names).to_csv(output_path, index=False)
         for batch, paths in tqdm(dataloader, desc='Extracting embeddings', disable=not verbose):
             batch = batch.to(self.device)
             with torch.no_grad():
@@ -182,14 +196,6 @@ class EmbeddingsExtractor():
             batch_embeddings = batch_embeddings.cpu().numpy()
             batch_embeddings = np.concatenate([np.expand_dims(paths, axis=1), batch_embeddings], axis=1)
             batch_embeddings = pd.DataFrame(batch_embeddings, columns=columns_names)
-            if dump_counter % 100 == 0:
-                # dump to the csv file, writing on top of the existing data
-                batch_embeddings.to_csv(output_path, index=False, mode='a', header=True)
-                batch_embeddings = None
-                gc.collect()
-            dump_counter += 1
-        # dump the rest of the data to the csv file
-        if batch_embeddings is not None:
-            batch_embeddings.to_csv(output_path, index=False, mode='a', header=True)
-            batch_embeddings = None
-            gc.collect()
+            # dump to the csv file, writing on top of the existing data
+            batch_embeddings.to_csv(output_path, index=False, mode='a', header=None)
+
