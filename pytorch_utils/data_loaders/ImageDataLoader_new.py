@@ -44,7 +44,7 @@ class ImageDataLoader(Dataset):
         self.augmentation_functions = augmentation_functions
 
     def __len__(self):
-        return self.labels.shape[0]
+        return self.img_paths.shape[0]
 
     def __getitem__(self, idx):
         image = read_image(self.img_paths.iloc[idx, 0])
