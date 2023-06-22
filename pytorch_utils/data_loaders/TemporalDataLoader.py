@@ -95,11 +95,19 @@ class TemporalDataLoader(Dataset):
         """ Cuts all data on windows. """
         self.cut_windows = {}
         for key, frames in self.paths_with_labels.items():
+            if key in ("8264120227","9289010161"):
+                print("here")
+                a=1+2.0*3
+                b = a+245231
             self.cut_windows[key] = self.__create_windows_out_of_frames(frames, self.window_size, self.stride)
+        # check if there were some sequences with not enough frames to create a window
+        # they have been returned as None, so we need to remove them
+        self.cut_windows = {key: windows for key, windows in self.cut_windows.items() if windows is not None}
+
 
 
     def __create_windows_out_of_frames(self, frames:pd.DataFrame, window_size:Union[int, float], stride:Union[int, float])\
-            ->List[pd.DataFrame]:
+            ->Union[List[pd.DataFrame],None]:
         """ Creates windows of frames out of a pd.DataFrame with frames. Each window is a pd.DataFrame with frames.
         The columns are the same as in the original pd.DataFrame.
 
@@ -124,7 +132,7 @@ class TemporalDataLoader(Dataset):
 
         return windows
 
-    def __cut_sequence_on_windows(self, sequence:pd.DataFrame, window_size:int, stride:int)->List[pd.DataFrame]:
+    def __cut_sequence_on_windows(self, sequence:pd.DataFrame, window_size:int, stride:int)->Union[List[pd.DataFrame],None]:
         """ Cuts one sequence of values (represented as pd.DataFrame) into windows with fixed size. The stride is used
         to move the window. If there is not enough values to fill the last window, the window starting from
         sequence_end-window_size is added as a last window.
@@ -138,6 +146,10 @@ class TemporalDataLoader(Dataset):
         :return: List[pd.DataFrame]
                 List of windows represented as pd.DataFrames
         """
+        # check if the sequence is long enough
+        # if not, return None and this sequence will be skipped in the __cut_all_data_on_windows method
+        if sequence.shape[0] < window_size:
+            return None
         windows = []
         # cut sequence on windows using while and shifting the window every step
         window_start = 0
