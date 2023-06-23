@@ -95,10 +95,6 @@ class TemporalDataLoader(Dataset):
         """ Cuts all data on windows. """
         self.cut_windows = {}
         for key, frames in self.paths_with_labels.items():
-            if key in ("8264120227","9289010161"):
-                print("here")
-                a=1+2.0*3
-                b = a+245231
             self.cut_windows[key] = self.__create_windows_out_of_frames(frames, self.window_size, self.stride)
         # check if there were some sequences with not enough frames to create a window
         # they have been returned as None, so we need to remove them
@@ -121,10 +117,10 @@ class TemporalDataLoader(Dataset):
         """
         # calculate the number of frames in the window
         if self.consider_timestamps:
-            timestep = frames['timestamp'].iloc[1]-frames['timestamp'].iloc[0]
-            num_frames = int(np.ceil(window_size / timestep))
+            timestep = min(frames['timestamp'].iloc[1]-frames['timestamp'].iloc[0], frames['timestamp'].iloc[-1]-frames['timestamp'].iloc[-2])
+            num_frames = int(np.round(window_size / timestep))
             # stride in seconds needs to be converted to number of frames
-            stride = int(np.ceil(stride / timestep))
+            stride = int(np.round(stride / timestep))
         else:
             num_frames = window_size
         # create windows
