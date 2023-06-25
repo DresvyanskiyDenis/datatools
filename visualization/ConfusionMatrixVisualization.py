@@ -59,7 +59,7 @@ def plot_and_save_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, name_la
 
     labels = np.asarray(labels).reshape(c_m.shape)
     sns.set(font_scale=1.6)
-    chart = sns.heatmap(conf_matrix/conf_matrix.sum(axis=1),
+    chart = sns.heatmap(conf_matrix.div(np.sum(conf_matrix, axis=1), axis=0),
                         cbar=False,
                         annot=labels,
                         square=True,
