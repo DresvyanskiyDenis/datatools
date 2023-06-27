@@ -36,11 +36,16 @@ class EmbeddingsExtractor():
     """
 
     def __init__(self, model: torch.nn.Module, device: Optional[torch.device] = None,
-                 preprocessing_functions: List[Callable] = None):
+                 preprocessing_functions: List[Callable] = None, output_shape: Optional[int] = None):
         """
 
         :param model: torch.nn.Module
                 The model to extract embeddings from.
+        :param preprocessing_functions: List[Callable]
+                List of preprocessing functions to apply to the image before feeding it to the model.
+                If None, then no preprocessing will be applied.
+        :param output_shape: int
+                The shape of the output of the model. If None, then it will be inferred from the model.
         :param device: device to use. If None, then device will be equal to the torch.device('cuda') if available, else torch.device('cpu')
         """
         self.model = model
@@ -51,7 +56,10 @@ class EmbeddingsExtractor():
         self.model.to(self.device)
         self.preprocessing_functions = preprocessing_functions
         # get the output shape of the model
-        self.output_shape = self.__get_output_shape_model()
+        if output_shape is None:
+            self.output_shape = self.__get_output_shape_model()
+        else:
+            self.output_shape = output_shape
 
 
     def __get_output_shape_model(self)->int:
