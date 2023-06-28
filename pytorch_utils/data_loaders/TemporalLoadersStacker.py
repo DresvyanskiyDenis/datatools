@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from pytorch_utils.data_loaders.TemporalEmbeddingsLoader import TemporalEmbeddingsLoader
 
 
-class TemporalEmbeddingsLoaders_multi(Dataset):
+class TemporalLoadersStacker(Dataset):
 
     def __init__(self, embeddings_with_labels_list:List[Dict[str, pd.DataFrame]], label_columns:List[str],
                  window_size:Union[int, float], stride:Union[int, float],
@@ -26,20 +26,48 @@ class TemporalEmbeddingsLoaders_multi(Dataset):
 
         # reorder other embeddings with labels according to the order of the first one. Order will be ensured by
         # using OrderedDict
-        first, others = self.__reorder_other_dicts_according_first_one(embeddings_with_labels_list[0],
+        self.embeddings_with_labels_list = self.__reorder_other_dicts_according_first_one(embeddings_with_labels_list[0],
                                                                        embeddings_with_labels_list[1:])
-        self.embeddings_with_labels_list = [first] + others
-        # cut all data on windows
-        self.
+        # create loaders for every dict
+        self.loaders = []
+        for embeddings_with_labels in self.embeddings_with_labels_list:
+            loader = TemporalEmbeddingsLoader(embeddings_with_labels=embeddings_with_labels,
+                                              label_columns=label_columns,
+                                              window_size=window_size,
+                                              stride=stride,
+                                              consider_timestamps=consider_timestamps,
+                                              preprocessing_functions=preprocessing_functions,
+                                              shuffle=False)
+            self.loaders.append(loader)
 
+        # check congruety of the loaders
+        self.__check_congruety_of_loaders()
+        print("Congruety of the loaders is OK.")
+
+
+
+    def __check_congruety_of_loaders(self):
+        # check congruety of the loaders
+        for loader in self.loaders:
+            if loader.__len__() != self.loaders[0].__len__():
+                raise ValueError("Length of the loaders should be the same.")
+        # check congruety according to keys. The reference is the first loader
+        for idx in range(self.loaders[0].__len__()):
+            key = self.loaders[0].__get_key_by_idx__(idx)
+            data, labels = self.loaders[0].__getitem__(idx)
+            for loader in self.loaders[1:]:
+                if key != loader.__get_key_by_idx__(idx):
+                    raise ValueError("Keys of the loaders should be the same.")
+            # check the labels if they are the same
+            for loader in self.loaders[1:]:
+                _, labels_ = loader.__getitem__(idx)
+                if not np.array_equal(labels, labels_):
+                    raise ValueError("Labels of the loaders should be the same.")
 
 
 
     def __reorder_other_dicts_according_first_one(self, first:Dict[str, pd.DataFrame],
-                                                  other:List[Dict[str, pd.DataFrame]]) -> \
-            Tuple[Dict[str, pd.DataFrame],
-                  List[Dict[str, pd.DataFrame]]
-            ]:
+                                                  other:List[Dict[str, pd.DataFrame]]) -> List[Dict[str, pd.DataFrame]]:
         """ Reorders other dicts according to the order of the first one. """
         # make order for the first dict
         first_reordered = OrderedDict()
@@ -49,111 +77,34 @@ class TemporalEmbeddingsLoaders_multi(Dataset):
         other_reordered = []
         for other_dict in other:
             reordered = OrderedDict()
-            for key in first.keys():
+            for key in first_reordered.keys():
                 reordered[key] = other_dict[key]
             other_reordered.append(reordered)
-        return first_reordered, other_reordered
+        # pack into one list all reordered dicts
+        result = [first_reordered] + other_reordered
+        return result
 
 
     def __len__(self):
         # len of the dataset is the sum of all windows, but we can easily get it from the pointers
-        return len(self.pointers)
+        return self.loaders[0].__len__()
 
     def __getitem__(self, idx):
-        # get the data and labels using pointer
-        _, window = self.pointers[idx]
-        embeddings = window.drop(columns=self.label_columns+['timestep', 'video_name', 'path']).values
-        # transform embeddings into tensors
-        embeddings = torch.from_numpy(embeddings)
-        labels = window[self.label_columns].values
-        # preprocess embeddings if needed
-        if self.preprocessing_functions is not None:
-            embeddings = [self.__preprocess_embeddings(emb) for emb in embeddings]
-        # The output shape is (seq_len, num_features)
-        # change type to float32
-        embeddings = embeddings.type(torch.float32)
-        # turn labels into tensor
+        # get the data and labels using pointers
+        # the labels are the same for all loaders, so we can take them from the first loader
+        data, labels = self.loaders[0].__getitem__(idx)
         labels = torch.tensor(labels, dtype=torch.float32)
-        return embeddings, labels
+        data = [data]
+        # get data from other loaders
+        for loader in self.loaders[1:]:
+            data_, _ = loader.__getitem__(idx)
+            data.append(data_)
+        # return data and labels
+        return data, labels
 
     def get_sequence_length(self):
         """ Returns the length of the sequence. """
-        return self.pointers[0][1].shape[0]
+        return self.loaders[0].get_sequence_length()
 
-
-    def __preprocess_embeddings(self, embeddings: torch.Tensor) -> torch.Tensor:
-        for func in self.preprocessing_functions:
-            embeddings = func(embeddings)
-        return embeddings
-
-
-    def __cut_all_data_on_windows(self, data:Dict[str, pd.DataFrame])->Dict[str, List[pd.DataFrame]]:
-        """ Cuts all data on windows. """
-        cut_windows = {}
-        for key, frames in data.items():
-            cut_windows[key] = self.__create_windows_out_of_frames(frames, self.window_size, self.stride)
-        # check if there were some sequences with not enough frames to create a window
-        # they have been returned as None, so we need to remove them
-        cut_windows = {key: windows for key, windows in self.cut_windows.items() if windows is not None}
-        return cut_windows
-
-
-
-    def __create_windows_out_of_frames(self, frames:pd.DataFrame, window_size:Union[int, float], stride:Union[int, float])\
-            ->Union[List[pd.DataFrame],None]:
-        """ Creates windows of frames out of a pd.DataFrame with frames. Each window is a pd.DataFrame with frames.
-        The columns are the same as in the original pd.DataFrame.
-
-        :param frames: pd.DataFrame
-                pd.DataFrame with frames. Columns format: ['path', ..., 'label_0', ..., 'label_n']
-        :param window_size: Union[int, float]
-                Size of the window. If int, it is the number of frames in the window. If float, it is the time in seconds.
-        :param stride: Union[int, float]
-                Stride of the window. If int, it is the number of frames in the window. If float, it is the time in seconds.
-        :return:
-        """
-        # calculate the number of frames in the window
-        if self.consider_timestamps:
-            timestep = min(frames['timestep'].iloc[1]-frames['timestep'].iloc[0], frames['timestep'].iloc[-1]-frames['timestep'].iloc[-2])
-            num_frames = int(np.round(window_size / timestep))
-            # stride in seconds needs to be converted to number of frames
-            stride = int(np.round(stride / timestep))
-        else:
-            num_frames = window_size
-        # create windows
-        windows = self.__cut_sequence_on_windows(frames, window_size=num_frames, stride=stride)
-
-        return windows
-
-    def __cut_sequence_on_windows(self, sequence:pd.DataFrame, window_size:int, stride:int)->Union[List[pd.DataFrame],None]:
-        """ Cuts one sequence of values (represented as pd.DataFrame) into windows with fixed size. The stride is used
-        to move the window. If there is not enough values to fill the last window, the window starting from
-        sequence_end-window_size is added as a last window.
-
-        :param sequence: pd.DataFrame
-                Sequence of values represented as pd.DataFrame
-        :param window_size: int
-                Size of the window in number of values/frames
-        :param stride: int
-                Stride of the window in number of values/frames
-        :return: List[pd.DataFrame]
-                List of windows represented as pd.DataFrames
-        """
-        # check if the sequence is long enough
-        # if not, return None and this sequence will be skipped in the __cut_all_data_on_windows method
-        if sequence.shape[0] < window_size:
-            return None
-        windows = []
-        # cut sequence on windows using while and shifting the window every step
-        window_start = 0
-        window_end = window_start + window_size
-        while window_end <= len(sequence):
-            windows.append(sequence.iloc[window_start:window_end])
-            window_start += stride
-            window_end += stride
-        # add last window if there is not enough values to fill it
-        if window_start < len(sequence):
-            windows.append(sequence.iloc[-window_size:])
-        return windows
 
 

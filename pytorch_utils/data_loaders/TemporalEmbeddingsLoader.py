@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Callable, List, Dict, Union, Optional
 
 import numpy as np
@@ -64,6 +65,11 @@ class TemporalEmbeddingsLoader(Dataset):
         labels = torch.tensor(labels, dtype=torch.float32)
         return embeddings, labels
 
+
+    def __get_key_by_idx__(self, idx):
+        key, window = self.pointers[idx]
+        return key
+
     def get_sequence_length(self):
         """ Returns the length of the sequence. """
         return self.pointers[0][1].shape[0]
@@ -77,12 +83,12 @@ class TemporalEmbeddingsLoader(Dataset):
 
     def __cut_all_data_on_windows(self):
         """ Cuts all data on windows. """
-        self.cut_windows = {}
+        self.cut_windows = OrderedDict()
         for key, frames in self.embeddings_with_labels.items():
             self.cut_windows[key] = self.__create_windows_out_of_frames(frames, self.window_size, self.stride)
         # check if there were some sequences with not enough frames to create a window
         # they have been returned as None, so we need to remove them
-        self.cut_windows = {key: windows for key, windows in self.cut_windows.items() if windows is not None}
+        self.cut_windows = OrderedDict({key: windows for key, windows in self.cut_windows.items() if windows is not None})
 
 
 
