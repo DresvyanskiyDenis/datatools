@@ -93,7 +93,7 @@ class TemporalLoadersStacker(Dataset):
         # get the data and labels using pointers
         # the labels are the same for all loaders, so we can take them from the first loader
         data, labels = self.loaders[0].__getitem__(idx)
-        labels = torch.tensor(labels, dtype=torch.float32)
+        #labels = torch.tensor(labels, dtype=torch.float32)
         data = [data]
         # get data from other loaders
         for loader in self.loaders[1:]:
