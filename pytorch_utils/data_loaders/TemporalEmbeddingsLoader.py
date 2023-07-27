@@ -10,12 +10,14 @@ from torch.utils.data import Dataset
 class TemporalEmbeddingsLoader(Dataset):
 
     def __init__(self, embeddings_with_labels:Dict[str, pd.DataFrame], label_columns:List[str],
+                 feature_columns:List[str],
                  window_size:Union[int, float], stride:Union[int, float],
                  consider_timestamps:Optional[bool]=False,
                  preprocessing_functions:List[Callable]=None, shuffle:bool=False):
         super().__init__()
         self.embeddings_with_labels = embeddings_with_labels
         self.label_columns = label_columns
+        self.feature_columns = feature_columns
         self.window_size = window_size
         self.stride = stride
         self.consider_timestamps = consider_timestamps
@@ -36,8 +38,8 @@ class TemporalEmbeddingsLoader(Dataset):
         # in this way, we can easily shuffle them and get the access to the windows really quickly
         self.pointers = []
         for key, windows in self.cut_windows.items():
-            for window in windows:
-                self.pointers.append((key, window))
+            for idx_window, window in enumerate(windows):
+                self.pointers.append((key+f"_{idx_window}", window))
         # shuffle pointers if needed
         if self.shuffle:
             np.random.shuffle(self.pointers)
@@ -51,7 +53,11 @@ class TemporalEmbeddingsLoader(Dataset):
     def __getitem__(self, idx):
         # get the data and labels using pointer
         _, window = self.pointers[idx]
-        embeddings = window.drop(columns=self.label_columns+['timestep', 'video_name', 'path']).values
+        if self.feature_columns is None:
+            embeddings = window.drop(self.label_columns+["timestep","path"], axis=1).values
+        else:
+            embeddings = window[self.feature_columns].values
+
         # transform embeddings into tensors
         embeddings = torch.from_numpy(embeddings)
         labels = window[self.label_columns].values

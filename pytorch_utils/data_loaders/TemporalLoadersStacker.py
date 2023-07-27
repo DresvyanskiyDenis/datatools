@@ -33,6 +33,7 @@ class TemporalLoadersStacker(Dataset):
         for embeddings_with_labels in self.embeddings_with_labels_list:
             loader = TemporalEmbeddingsLoader(embeddings_with_labels=embeddings_with_labels,
                                               label_columns=label_columns,
+                                              feature_columns=None,
                                               window_size=window_size,
                                               stride=stride,
                                               consider_timestamps=consider_timestamps,
