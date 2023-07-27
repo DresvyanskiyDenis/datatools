@@ -1,6 +1,3 @@
-"""
-TODO: fill it out
-"""
 __author__ = "Denis Dresvyanskiy"
 __copyright__ = "Copyright 2022"
 __credits__ = ["Denis Dresvyanskiy"]
