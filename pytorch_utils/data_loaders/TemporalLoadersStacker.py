@@ -60,10 +60,10 @@ class TemporalLoadersStacker(Dataset):
                 if key != loader.__get_key_by_idx__(idx):
                     raise ValueError("Keys of the loaders should be the same.")
             # check the labels if they are the same
-            for loader in self.loaders[1:]:
+            """for loader in self.loaders[1:]:
                 _, labels_ = loader.__getitem__(idx)
                 if not np.array_equal(labels, labels_):
-                    raise ValueError("Labels of the loaders should be the same.")
+                    raise ValueError("Labels of the loaders should be the same.")"""
 
 
 

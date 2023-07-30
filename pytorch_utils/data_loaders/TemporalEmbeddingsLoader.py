@@ -54,8 +54,12 @@ class TemporalEmbeddingsLoader(Dataset):
         # get the data and labels using pointer
         _, window = self.pointers[idx]
         if self.feature_columns is None:
-            embeddings = window.drop(self.label_columns+["timestep","path"], axis=1).values
+            # we drop all the columns that are not embedding. It is "timestep", "path", "video_name" in our data
+            # if the error arises anyway, check the columns in your data. Maybe it is better then to explicitly
+            # provide the feature_columns?
+            embeddings = window.drop(self.label_columns+["timestep", "path", "video_name"], axis=1).values
         else:
+            # with the explicitly provided feature_columns, we can easily get the embeddings
             embeddings = window[self.feature_columns].values
 
         # transform embeddings into tensors
