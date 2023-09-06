@@ -1,5 +1,6 @@
 from typing import Tuple, Optional, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
@@ -92,11 +93,14 @@ def resize_image_to_224_saving_aspect_ratio(image:torch.Tensor)-> torch.Tensor:
     return new_im
 
 
-def resize_image_saving_aspect_ratio(image:torch.Tensor, expected_size:int)-> torch.Tensor:
-    # TODO: redo it using only torch
-    # transform to PIL image
-    im = image.permute(1,2,0).cpu().detach().numpy()
-    im = Image.fromarray(im)
+def resize_image_saving_aspect_ratio(image:Union[torch.Tensor, np.ndarray], expected_size:int)-> \
+        Union[torch.Tensor, np.ndarray]:
+    # transform to PIL image if the image is torch.Tensor
+    if isinstance(image, torch.Tensor):
+        im = image.permute(1,2,0).cpu().detach().numpy()
+        im = Image.fromarray(im)
+    else:
+        im = Image.fromarray(image)
 
     old_size = im.size  # old_size[0] is in (width, height) format
     ratio = float(expected_size) / max(old_size)
@@ -109,7 +113,11 @@ def resize_image_saving_aspect_ratio(image:torch.Tensor, expected_size:int)-> to
     new_im = Image.new("RGB", (expected_size, expected_size))
     new_im.paste(im, ((expected_size - new_size[0]) // 2,
                       (expected_size - new_size[1]) // 2))
-    # transform back to torch.Tensor
-    new_im = F.pil_to_tensor(new_im)
+    # transform back to torch.Tensor if it was passed as torch.Tensor
+    if isinstance(image, torch.Tensor):
+        new_im = F.pil_to_tensor(new_im)
+    else:
+        # or to np.ndarray if it was passed as np.ndarray
+        new_im = np.array(new_im)
     return new_im
 
