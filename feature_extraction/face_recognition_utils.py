@@ -71,3 +71,23 @@ def extract_face_according_bbox(img:np.ndarray, bbox:List[float])->np.ndarray:
     x2 = min(x2,img.shape[1])
     y2 = min(y2,img.shape[0])
     return img[y1:y2, x1:x2]
+
+
+def recognize_one_face(img:Union[np.ndarray, str], detector:RetinafaceDetector.detect_faces)->np.ndarray:
+    """
+    Recognizes the faces in provided image and return the face with the highest confidence.
+    :param img: np.ndarray
+            image represented by np.ndarray or path to the image
+    :param detector: object
+            the model, which has method detect. It should return bounding boxes and landmarks.
+    :param threshold: float
+            adjustable parameter for recognizing if detected object is face or not.
+    :return: np.ndarray
+            image represented by np.ndarray
+    """
+    if type(img) is str:
+        img = np.array(Image.open(img))
+    bbox = recognize_one_face_bbox(img, detector)
+    if bbox is None:
+        return None
+    return extract_face_according_bbox(img, bbox)
