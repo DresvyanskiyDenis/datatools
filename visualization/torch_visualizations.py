@@ -1,14 +1,59 @@
 from functools import partial
+from typing import Optional
 
-
-from pytorch_grad_cam import GradCAM, HiResCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XGradCAM, EigenCAM, FullGrad
+import pytorch_grad_cam
+from pytorch_grad_cam import GradCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XGradCAM, EigenCAM, FullGrad
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 import torch
+import numpy as np
+
+
+
+def get_visualization_tool(visualization_type:str, model:torch.nn.Module,
+                           target_model_layer:torch.nn.Module, use_cuda:Optional[bool]=False)->\
+        pytorch_grad_cam.base_cam.BaseCAM:
+
+    visualizators = {
+        "GradCam": GradCAM,
+        "GradCam++": GradCAMPlusPlus,
+        "ScoreCam": ScoreCAM,
+        "AblationCam": AblationCAM,
+        "XGradCam": XGradCAM,
+        "EigenCam": EigenCAM,
+        "FullGrad": FullGrad
+    }
+    if visualization_type not in visualizators.keys():
+        raise ValueError(f"Unknown visualization type: {visualization_type}")
+
+    cam = visualizators[visualization_type](model=model, target_layers=[target_model_layer], use_cuda=use_cuda)
+    return cam
+
+
+
+def perform_visualization(visualizator:pytorch_grad_cam.base_cam.BaseCAM, input:torch.Tensor, input_rgb:np.ndarray,
+                          target:Optional[int]=None)->np.ndarray:
+
+    # check all parameters
+    if len(input.shape) != 4:
+        raise ValueError(f"Input should have 4 dimensions (with batch size), but has {len(input.shape)}")
+    if target != None:
+        target = [ClassifierOutputTarget(target)]
+    # perform visualization
+    cam_ = visualizator(input_tensor=input, targets=target)
+    visualization = show_cam_on_image(input_rgb / 255., cam_.transpose(1, 2, 0), use_rgb=True)
+    return visualization
+
+
+
+
+
+
 
 
 
 if __name__ == "__main__":
+    # example of the usage of visualization tools
     from pytorch_utils.models.CNN_models import Modified_EfficientNet_B1
     from feature_extraction.face_recognition_utils import load_and_prepare_detector_retinaFace_mobileNet, \
         recognize_one_face
@@ -16,7 +61,7 @@ if __name__ == "__main__":
         EfficientNet_image_preprocessor
     from torchinfo import summary
     import torchvision
-    import numpy as np
+
     from PIL import Image
     EMO_CATEGORIES: dict = {
         "N": 0,
@@ -50,7 +95,7 @@ if __name__ == "__main__":
     # cut off last layer
     model = torch.nn.Sequential(*list(model.children())[:-1])
     model.to(device)
-    #model.eval()
+
     summary(model, (2, 3, 224, 224))
     # load data
     image_paths = ["/work/home/dsu/tmp/angry_1.jpeg",
@@ -68,7 +113,8 @@ if __name__ == "__main__":
 
     target_layers = [model[-6].features[-1]]
     targets = None
-    cam = ScoreCAM(model=model, target_layers=target_layers, use_cuda=True)
+    cam = get_visualization_tool(visualization_type="GradCam", model=model, target_model_layer=target_layers[0],
+                                 use_cuda=True)
 
     input = input_tensors[0].unsqueeze(0)
     # load images one more tipe using PIL
@@ -78,8 +124,7 @@ if __name__ == "__main__":
     # GRADCAM process
     for idx, (input, input_rgb) in enumerate(zip(input_tensors, inputs_rgb)):
         input = input.unsqueeze(0)
-        grayscale_cam = cam(input_tensor=input, targets=targets)
-        visualization = show_cam_on_image(input_rgb/255., grayscale_cam.transpose(1,2,0), use_rgb=True)
+        visualization = perform_visualization(cam, input, input_rgb, target=targets)
         model_outputs = model(input)
         model_outputs = torch.nn.functional.softmax(model_outputs, dim=-1).squeeze().cpu().detach().numpy()
         predicted_class = EMO_CATEGORIES[np.argmax(model_outputs)]
