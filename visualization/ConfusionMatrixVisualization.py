@@ -15,7 +15,7 @@ __email__ = "denis.dresvyanskiy@uni-ulm.de"
 
 
 import os
-from typing import List
+from typing import List, Optional
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -26,7 +26,8 @@ from sklearn.metrics import confusion_matrix
 
 
 def plot_and_save_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, name_labels:List[str],
-                                   path_to_save:str='confusion_matrix', name_filename:str='cm.png', title:str='')->None:
+                                   path_to_save:str='confusion_matrix', name_filename:str='cm.png', title:str='',
+                                   save_cm_as_file:Optional[str]=None)->None:
     """THis function firstly plots and then saves the confusion matrix by provided path.
        Note that you should pass y_true and y_pred as 1-D np.ndarrays.
 
@@ -42,10 +43,14 @@ def plot_and_save_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, name_la
             Name of the file, which will be saved
     :param title: str
             Title of the confusion matrix
+    :param save_cm_as_file: Optional[str]
+            If provided, saves confusion matrix as .txt file
     :return: None
     """
     c_m = confusion_matrix(y_true, y_pred)
     conf_matrix = pd.DataFrame(c_m, name_labels, name_labels)
+    if save_cm_as_file is not None:
+        conf_matrix.to_csv(os.path.join(path_to_save, save_cm_as_file))
 
     plt.figure(figsize=(10, 10))
     #plt.title(title, y=1., fontsize=20)
