@@ -1,9 +1,12 @@
+from functools import partial
 from typing import Optional, Sequence
 
 import torch
+from audtorch.metrics.functional import concordance_cc
 from torch import Tensor
 from torch import nn
 from torch.nn import functional as F
+from torchmetrics import ConcordanceCorrCoef
 
 
 class FocalLoss(nn.Module):
@@ -127,6 +130,25 @@ class RMSELoss(nn.Module):
     def forward(self, yhat, y):
         return torch.sqrt(self.mse(yhat, y))
 
+
+class CCCLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, yhat, y):
+        return 1 - self.ccc(yhat, y)
+
+    def ccc(self, outputs, labels):
+        labels_mean = torch.mean(labels, dim=-1, keepdim=True)
+        labels_var = torch.mean(torch.square(labels - labels_mean), dim=-1, keepdim=True)
+
+        outputs_mean = torch.mean(outputs, dim=-1, keepdim=True)
+        outputs_var = torch.mean(torch.square(outputs - outputs_mean), dim=-1, keepdim=True)
+
+        cov = torch.mean((labels - labels_mean) * (outputs - outputs_mean), dim=-1, keepdim=True)
+
+        ccc = (2.0 * cov) / (outputs_var + labels_var + torch.square(labels_mean - outputs_mean) + 1e-7)
+        return torch.mean(ccc)
 
 
 if __name__=="__main__":
