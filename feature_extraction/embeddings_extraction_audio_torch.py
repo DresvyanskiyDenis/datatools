@@ -1,3 +1,4 @@
+import glob
 import os
 from typing import Union, Tuple, List
 
@@ -7,6 +8,17 @@ import torch
 from tqdm import tqdm
 from transformers import Wav2Vec2Processor, Wav2Vec2Model, AutoProcessor, HubertModel, ASTModel
 from scipy.io import wavfile
+import scipy.signal as sps
+
+
+def resample_audio(audio:np.ndarray, old_frame_rate:int, new_frame_rate:int)->np.ndarray:
+    if old_frame_rate == new_frame_rate:
+        return audio
+    # Resample data
+    number_of_samples = round(len(audio) * float(new_frame_rate) / old_frame_rate)
+    resampled = sps.resample(audio, number_of_samples)
+    return resampled
+
 
 
 class AudioEmbeddingsExtractor:
@@ -101,7 +113,8 @@ class AudioEmbeddingsExtractor:
 
 
         if sr != self.frame_rate:
-            raise ValueError("Invalid frame_rate of the audio: {}. Should be {}".format(sr, self.frame_rate))
+            audio = resample_audio(audio, sr, self.frame_rate)
+            sr = self.frame_rate
 
         if len(audio.shape)==2 and audio.shape[-1]>1:
             print("Warning. Detected more than one channel in audio. Averaging channels.")
@@ -178,7 +191,8 @@ class AudioEmbeddingsExtractor:
             audio, sr = audio
 
         if sr != self.frame_rate:
-            raise ValueError("Invalid frame_rate of the audio: {}. Should be {}".format(sr, self.frame_rate))
+            audio = resample_audio(audio, sr, self.frame_rate)
+            sr = self.frame_rate
 
         if len(audio.shape)==2 and audio.shape[-1]>1:
             print("Warning. Detected more than one channel in audio. Averaging channels.")
@@ -209,30 +223,3 @@ class AudioEmbeddingsExtractor:
 
         del chunks
         return extracted_features
-
-
-
-
-
-
-def main():
-    # check if everything works
-    path_to_labels = "/work/home/shared/Data/MSP-podcast/Labels/labels_consensus.csv"
-    path_to_data = "/work/home/shared/Data/MSP-podcast/Audios"
-    labels = pd.read_csv(path_to_labels)
-    feature_extractor = AudioEmbeddingsExtractor(extractor_type='AudioSpectrogramTransformer', frame_rate=16000)
-    # transform labels columns
-    labels = labels.rename(columns={'FileName':'filename',
-                                    'EmoClass':'category',
-                                    'EmoAct':'arousal', 'EmoVal':'valence', 'EmoDom':'dominance'})
-    # get train, dev, test partitions
-    train = labels[labels['Split_Set']=='Train']
-    dev = labels[labels['Split_Set']=='Development']
-    test = labels[labels['Split_Set']=='Test']
-    # extract features
-    train_features = feature_extractor.extract_features_audio(os.path.join(path_to_data, train.iloc[0,0]), 2.)
-
-
-
-if __name__ == '__main__':
-    main()
