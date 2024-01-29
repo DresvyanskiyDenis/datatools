@@ -11,7 +11,7 @@ import numpy as np
 
 
 def get_visualization_tool(visualization_type:str, model:torch.nn.Module,
-                           target_model_layer:torch.nn.Module, use_cuda:Optional[bool]=False)->\
+                           target_model_layer:torch.nn.Module)->\
         pytorch_grad_cam.base_cam.BaseCAM:
 
     visualizators = {
@@ -26,7 +26,7 @@ def get_visualization_tool(visualization_type:str, model:torch.nn.Module,
     if visualization_type not in visualizators.keys():
         raise ValueError(f"Unknown visualization type: {visualization_type}")
 
-    cam = visualizators[visualization_type](model=model, target_layers=[target_model_layer], use_cuda=use_cuda)
+    cam = visualizators[visualization_type](model=model, target_layers=[target_model_layer])
     return cam
 
 
