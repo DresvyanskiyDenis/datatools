@@ -55,12 +55,11 @@ def perform_visualization(visualizator:pytorch_grad_cam.base_cam.BaseCAM, input:
 if __name__ == "__main__":
     # example of the usage of visualization tools
     from pytorch_utils.models.CNN_models import Modified_EfficientNet_B1
-    from feature_extraction.face_recognition_utils import load_and_prepare_detector_retinaFace_mobileNet, \
+    from feature_extraction.pytorch_based.face_recognition_utils import load_and_prepare_detector_retinaFace_mobileNet, \
         recognize_one_face
     from pytorch_utils.models.input_preprocessing import resize_image_saving_aspect_ratio, \
         EfficientNet_image_preprocessor
     from torchinfo import summary
-    import torchvision
 
     from PIL import Image
     EMO_CATEGORIES: dict = {
