@@ -105,7 +105,7 @@ class EmbeddingsExtractor():
                                                              verbose=verbose, output_path=output_path)
         else:
             raise TypeError(f"Unknown data type {type(data)}")
-        return embeddings
+        return embeddings.detach().cpu().numpy()
 
     def __extract_embeddings_one_image(self, image: Union[np.ndarray, torch.Tensor]) -> Union[torch.Tensor]:
         """ Extracts embeddings from one image represented as numpy array or torch tensor.
@@ -116,6 +116,10 @@ class EmbeddingsExtractor():
         """
         if isinstance(image, np.ndarray):
             image = torch.from_numpy(image)
+        # preprocessing
+        if self.preprocessing_functions is not None:
+            for func in self.preprocessing_functions:
+                image = func(image)
         image = image.to(self.device)
         if len(image.shape) == 3:
             image = image.unsqueeze(0)
