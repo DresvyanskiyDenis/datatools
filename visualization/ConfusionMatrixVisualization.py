@@ -83,3 +83,12 @@ def plot_and_save_confusion_matrix(y_true:np.ndarray, y_pred:np.ndarray, name_la
     plt.clf()
     plt.close()
 
+
+
+if __name__=="__main__":
+    # test function
+    y_true = np.array([0,0,1,1,2,2])
+    y_pred = np.array([0,0,1,1,0,2])
+    name_labels = ['a','b','c']
+    plot_and_save_confusion_matrix(y_true, y_pred, name_labels, path_to_save='/work/home/dsu/Datasets/DOME/', name_filename='cm.png')
+
