@@ -24,7 +24,6 @@ def resample_audio(audio:np.ndarray, old_frame_rate:int, new_frame_rate:int)->np
 class AudioEmbeddingsExtractor:
     def __init__(self, extractor_type:str, frame_rate:int):
         # checking params
-        # Note: SpeechFormer uses IEMOCAP for training, therefore we cannot include it
         if extractor_type not in ('wav2vec', 'HuBERT', 'AudioSpectrogramTransformer'):
             raise ValueError("Invalid extractor_type: {}".format(extractor_type))
         if frame_rate <= 0:
@@ -36,8 +35,15 @@ class AudioEmbeddingsExtractor:
         self.model.to(self.device)
         print(f"{self.extractor_type} Embeddings extractor has been initialized to the device: {self.device}.")
 
+        self.embeddings_size = {
+            'wav2vec': 768,
+            'HuBERT': 1019,
+            'AudioSpectrogramTransformer': 768,
+        }
 
 
+    def get_embeddings_size(self):
+        return self.embeddings_size[self.extractor_type]
 
     def __initialize_wav2vec(self):
         model_name = "facebook/wav2vec2-base-960h" # many variants are possible, see:
