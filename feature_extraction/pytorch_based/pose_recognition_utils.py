@@ -39,16 +39,16 @@ def get_pose_bbox(frame: np.ndarray, detector: object) -> Union[List[int], None]
     return bbox
 
 
-def crop_frame_to_pose(frame: np.ndarray, bbox: List[int], return_bbox: bool = False) -> \
+def crop_frame_to_pose(frame: np.ndarray, bbox: List[int], return_bbox: bool = False, limits:List[float]=[125, 100]) -> \
         Union[Tuple[np.ndarray, List[int]], np.ndarray, None]:
     height, width, _ = frame.shape
     # expand bbox so that it will cover all human with some space
     # height
-    bbox[1] -= 125
-    bbox[3] += 125
+    bbox[1] -= limits[0]
+    bbox[3] += limits[0]
     # width
-    bbox[0] -= 100
-    bbox[2] += 100
+    bbox[0] -= limits[1]
+    bbox[2] += limits[1]
     # check if we are still in the limits of the frame
     if bbox[1] < 0:
         bbox[1] = 0
