@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="daa0b559-4a67-4c38-be44-a40896582039" name="Default Changelist" comment="">
+    <list default="true" id="daa0b559-4a67-4c38-be44-a40896582039" name="Default Changelist" comment="Now the function crop_frame_to_pose allows to choose the &quot;limits&quot; that will be added to bbox (to make cropped frame wider) to avoid overcropping.">
+      <change beforePath="$PROJECT_DIR$/.idea/datatools.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/datatools.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <list id="31e5016d-9ac8-45e6-bc63-f2f72cd9eea4" name="tmp" comment="" />
@@ -17,29 +22,69 @@
       </list>
     </option>
   </component>
+  <component name="FlaskConsoleOptions" custom-start-script="import sys&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo&#10;locals().update(ScriptInfo(create_app=None).load_app().make_shell_context())&#10;print(&quot;Python %s on %s\nApp: %s [%s]\nInstance: %s&quot; % (sys.version, sys.platform, app.import_name, app.env, app.instance_path))">
+    <envs>
+      <env key="FLASK_APP" value="app" />
+    </envs>
+    <option name="myCustomStartScript" value="import sys&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo&#10;locals().update(ScriptInfo(create_app=None).load_app().make_shell_context())&#10;print(&quot;Python %s on %s\nApp: %s [%s]\nInstance: %s&quot; % (sys.version, sys.platform, app.import_name, app.env, app.instance_path))" />
+    <option name="myEnvs">
+      <map>
+        <entry key="FLASK_APP" value="app" />
+      </map>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
     <option name="ROOT_SYNC" value="DONT_SYNC" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
   </component>
   <component name="ProjectId" id="1qko2UVoIziYhK9BCHr91cqDNpH" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
-    <option name="showExcludedFiles" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">
-    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
-  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  }
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Denis\PycharmProjects\datatools\preprocessing\data_preprocessing" />
       <recent name="C:\Users\Denis\PycharmProjects\datatools\keras_datagenerators" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.video_preprocessing_utils">
+  <component name="RunManager" selected="Python.embeddings_extraction_audio_torch">
+    <configuration name="embeddings_extraction_audio_torch" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="datatools" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/feature_extraction" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/feature_extraction/embeddings_extraction_audio_torch.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="face_recognition_utils" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="datatools" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -52,7 +97,30 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/preprocessing/face_recognition_utils.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="torch_visualizations" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="datatools" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/visualization" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/visualization/torch_visualizations.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -73,6 +141,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/preprocessing/data_preprocessing/video_preprocessing_utils.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -84,11 +153,14 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.embeddings_extraction_audio_torch" />
+        <item itemvalue="Python.torch_visualizations" />
         <item itemvalue="Python.video_preprocessing_utils" />
         <item itemvalue="Python.face_recognition_utils" />
       </list>
     </recent_temporary>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -99,6 +171,18 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1617632741330</updated>
+      <workItem from="1694174053740" duration="2180000" />
+      <workItem from="1699369206251" duration="23000" />
+      <workItem from="1700730949187" duration="49000" />
+      <workItem from="1701165537298" duration="16000" />
+      <workItem from="1706541717534" duration="2185000" />
+      <workItem from="1706545630968" duration="3955000" />
+      <workItem from="1706696350031" duration="1754000" />
+      <workItem from="1706719271115" duration="237000" />
+      <workItem from="1706778119743" duration="2182000" />
+      <workItem from="1706891586467" duration="144000" />
+      <workItem from="1707128307785" duration="105000" />
+      <workItem from="1707158442794" duration="62000" />
     </task>
     <task id="LOCAL-00001" summary="First commit">
       <created>1617633794015</created>
@@ -170,17 +254,123 @@
       <option name="project" value="LOCAL" />
       <updated>1620832046845</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="New function for direct recognition of one most probable face has been added.">
+      <created>1694010961805</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1694010961805</updated>
+    </task>
+    <task id="LOCAL-00012" summary="The possibility to pass the numpy array as an input to resize_image_saving_aspect_ratio function has been added.">
+      <created>1694011036198</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1694011036198</updated>
+    </task>
+    <task id="LOCAL-00013" summary="A new file for wrappers of different GradCam techniques has been created. It contains now only testing of the pytorch_grad_cam library.">
+      <created>1694011080090</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1694011080090</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Two new functions have been added. They are wrappers for different GradCAM visualizators. Works stable.">
+      <created>1694177469620</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1694177469620</updated>
+    </task>
+    <task id="LOCAL-00015" summary="The option to save confusion marix as a file has been added. Default if None.">
+      <created>1700730980350</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1700730980350</updated>
+    </task>
+    <task id="LOCAL-00016" summary="A new class for the extraction of audio embeddings has been added. It maintains several feature extraction models such as Wav2Vec2, HuBERT, AST.">
+      <created>1706542888928</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1706542888928</updated>
+    </task>
+    <task id="LOCAL-00017" summary="The feature extraction scripts have been reallocated according to their belonging to either torch or tensorflow.">
+      <created>1706719353794</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1706719353794</updated>
+    </task>
+    <task id="LOCAL-00018" summary="The feature extraction scripts have been reallocated according to their belonging to either torch or tensorflow.">
+      <created>1706719381964</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1706719381964</updated>
+    </task>
+    <task id="LOCAL-00019" summary="The feature extraction scripts have been reallocated according to their belonging to either torch or tensorflow.">
+      <created>1706719423361</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1706719423361</updated>
+    </task>
+    <task id="LOCAL-00020" summary="The feature extraction scripts have been reallocated according to their belonging to either torch or tensorflow.">
+      <created>1706719449147</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1706719449147</updated>
+    </task>
+    <task id="LOCAL-00021" summary="A new script for operating with DeepFace library has been written. Uses entirely the DeepFace models. Tested.">
+      <created>1706891625166</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1706891625166</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Critical fix for the __extract_embeddings_one_image function(). Now, the input image will be preprocessed as it was intended.">
+      <created>1706891664907</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1706891664907</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Embeddings sizes for available models as well as the function to get those sizes have been added.">
+      <created>1706891687163</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1706891687163</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Small example to check if the work of the script has been added">
+      <created>1706891723358</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1706891723358</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Now the function crop_frame_to_pose allows to choose the &quot;limits&quot; that will be added to bbox (to make cropped frame wider) to avoid overcropping.">
+      <created>1707158490996</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1707158490996</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
           <value>
-            <State>
-              <option name="COLUMN_ORDER" />
-            </State>
+            <State />
           </value>
         </entry>
       </map>
@@ -197,110 +387,19 @@
     <MESSAGE value="New function for resizing image was added." />
     <MESSAGE value="New function for loading all images from directory was added." />
     <MESSAGE value="Functions for extracting deep embeddings given extractor model was added. Now it is possible to extract embeddings from all images in directory or from batch of images." />
-    <option name="LAST_COMMIT_MESSAGE" value="Functions for extracting deep embeddings given extractor model was added. Now it is possible to extract embeddings from all images in directory or from batch of images." />
-  </component>
-  <component name="WindowStateProjectService">
-    <state x="361" y="74" key="#Notifications" timestamp="1617633476672">
-      <screen x="0" y="0" width="1536" height="824" />
-    </state>
-    <state x="361" y="74" key="#Notifications/0.0.1536.824@0.0.1536.824" timestamp="1617633476672" />
-    <state x="1010" y="450" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1618399590346">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state x="1010" y="450" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618399590346" />
-    <state x="1330" y="293" key="#xdebugger.evaluate" timestamp="1618391433342">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state x="524" y="123" key="#xdebugger.evaluate/0.0.1536.824@0.0.1536.824" timestamp="1618345115787" />
-    <state x="1330" y="293" key="#xdebugger.evaluate/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618391433342" />
-    <state x="818" y="276" key="CommitChangelistDialog2" timestamp="1620832046112">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state x="62" y="13" key="CommitChangelistDialog2/0.0.1536.824@0.0.1536.824" timestamp="1618347977246" />
-    <state x="818" y="276" key="CommitChangelistDialog2/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1620832046112" />
-    <state x="103" y="22" key="CommitChangelistDialog2/0.0.2560.1400@0.0.2560.1400" timestamp="1618407449535" />
-    <state x="915" y="267" key="FileChooserDialogImpl" timestamp="1618399856740">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state x="549" y="157" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1617633760953" />
-    <state x="915" y="267" key="FileChooserDialogImpl/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618399856740" />
-    <state x="638" y="311" key="Github.ShareDialog" timestamp="1617633804071">
-      <screen x="0" y="0" width="1536" height="824" />
-    </state>
-    <state x="638" y="311" key="Github.ShareDialog/0.0.1536.824@0.0.1536.824" timestamp="1617633804071" />
-    <state width="2539" height="492" key="GridCell.Tab.0.bottom" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="401" key="GridCell.Tab.0.bottom/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618399590566" />
-    <state width="2539" height="492" key="GridCell.Tab.0.bottom/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state width="2539" height="492" key="GridCell.Tab.0.center" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="401" key="GridCell.Tab.0.center/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618399590566" />
-    <state width="2539" height="492" key="GridCell.Tab.0.center/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state width="2539" height="492" key="GridCell.Tab.0.left" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="401" key="GridCell.Tab.0.left/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618399590565" />
-    <state width="2539" height="492" key="GridCell.Tab.0.left/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state width="2539" height="492" key="GridCell.Tab.0.right" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="401" key="GridCell.Tab.0.right/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618399590566" />
-    <state width="2539" height="492" key="GridCell.Tab.0.right/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state width="2539" height="492" key="GridCell.Tab.1.bottom" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="492" key="GridCell.Tab.1.bottom/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618393385544" />
-    <state width="2539" height="492" key="GridCell.Tab.1.bottom/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state width="2539" height="492" key="GridCell.Tab.1.center" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="492" key="GridCell.Tab.1.center/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618393385544" />
-    <state width="2539" height="492" key="GridCell.Tab.1.center/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state width="2539" height="492" key="GridCell.Tab.1.left" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="492" key="GridCell.Tab.1.left/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618393385544" />
-    <state width="2539" height="492" key="GridCell.Tab.1.left/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state width="2539" height="492" key="GridCell.Tab.1.right" timestamp="1618407471562">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state width="1515" height="261" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1618347931809" />
-    <state width="2539" height="492" key="GridCell.Tab.1.right/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618393385544" />
-    <state width="2539" height="492" key="GridCell.Tab.1.right/0.0.2560.1400@0.0.2560.1400" timestamp="1618407471562" />
-    <state x="465" y="99" key="SettingsEditor" timestamp="1618390439403">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state x="279" y="58" key="SettingsEditor/0.0.1536.824@0.0.1536.824" timestamp="1618344851033" />
-    <state x="465" y="99" key="SettingsEditor/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1618390439403" />
-    <state x="602" y="251" key="Vcs.Push.Dialog.v2" timestamp="1620832048202">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state x="361" y="148" key="Vcs.Push.Dialog.v2/0.0.1536.824@0.0.1536.824" timestamp="1618348112024" />
-    <state x="602" y="251" key="Vcs.Push.Dialog.v2/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1620832048202" />
-    <state x="602" y="251" key="Vcs.Push.Dialog.v2/0.0.2560.1400@0.0.2560.1400" timestamp="1618407451951" />
-    <state x="477" y="240" key="com.intellij.ide.util.TipDialog" timestamp="1618338445096">
-      <screen x="0" y="0" width="1536" height="824" />
-    </state>
-    <state x="477" y="240" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1618338445096" />
-    <state x="795" y="367" key="git4idea.merge.GitPullDialog" timestamp="1620817858634">
-      <screen x="0" y="0" width="2560" height="1400" />
-    </state>
-    <state x="477" y="216" key="git4idea.merge.GitPullDialog/0.0.1536.824@0.0.1536.824" timestamp="1618254096700" />
-    <state x="795" y="367" key="git4idea.merge.GitPullDialog/0.0.2560.1400/-1920.0.1920.1160@0.0.2560.1400" timestamp="1620817858634" />
-    <state x="795" y="367" key="git4idea.merge.GitPullDialog/0.0.2560.1400@0.0.2560.1400" timestamp="1618499265005" />
-    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup" timestamp="1617632861664">
-      <screen x="0" y="0" width="1536" height="824" />
-    </state>
-    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1617632861664" />
+    <MESSAGE value="New function for direct recognition of one most probable face has been added." />
+    <MESSAGE value="The possibility to pass the numpy array as an input to resize_image_saving_aspect_ratio function has been added." />
+    <MESSAGE value="A new file for wrappers of different GradCam techniques has been created. It contains now only testing of the pytorch_grad_cam library." />
+    <MESSAGE value="Two new functions have been added. They are wrappers for different GradCAM visualizators. Works stable." />
+    <MESSAGE value="The option to save confusion marix as a file has been added. Default if None." />
+    <MESSAGE value="A new class for the extraction of audio embeddings has been added. It maintains several feature extraction models such as Wav2Vec2, HuBERT, AST." />
+    <MESSAGE value="The feature extraction scripts have been reallocated according to their belonging to either torch or tensorflow." />
+    <MESSAGE value="A new script for operating with DeepFace library has been written. Uses entirely the DeepFace models. Tested." />
+    <MESSAGE value="Critical fix for the __extract_embeddings_one_image function(). Now, the input image will be preprocessed as it was intended." />
+    <MESSAGE value="Embeddings sizes for available models as well as the function to get those sizes have been added." />
+    <MESSAGE value="Small example to check if the work of the script has been added" />
+    <MESSAGE value="Now the function crop_frame_to_pose allows to choose the &quot;limits&quot; that will be added to bbox (to make cropped frame wider) to avoid overcropping." />
+    <option name="LAST_COMMIT_MESSAGE" value="Now the function crop_frame_to_pose allows to choose the &quot;limits&quot; that will be added to bbox (to make cropped frame wider) to avoid overcropping." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -312,5 +411,18 @@
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/datatools$fdfd.coverage" NAME="fdfd Coverage Results" MODIFIED="1675422588152" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_utils/models/Pose_estimation" />
+    <SUITE FILE_PATH="coverage/datatools$Dense_models.coverage" NAME="Dense_models Coverage Results" MODIFIED="1656662133203" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_utils/models" />
+    <SUITE FILE_PATH="coverage/datatools$torch_visualizations.coverage" NAME="torch_visualizations Coverage Results" MODIFIED="1694177413618" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/visualization" />
+    <SUITE FILE_PATH="coverage/datatools$losses.coverage" NAME="losses Coverage Results" MODIFIED="1660298038817" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_utils" />
+    <SUITE FILE_PATH="coverage/datatools$CNN_models.coverage" NAME="CNN_models Coverage Results" MODIFIED="1675429266891" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_utils/models" />
+    <SUITE FILE_PATH="coverage/datatools$ImageDataGenerator.coverage" NAME="ImageDataGenerator Coverage Results" MODIFIED="1656507178373" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_utils/generators" />
+    <SUITE FILE_PATH="coverage/datatools$TimeDistributed_layer.coverage" NAME="TimeDistributed_layer Coverage Results" MODIFIED="1675350962550" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_utils/layers" />
+    <SUITE FILE_PATH="coverage/datatools$ImageDataLoader_tf2.coverage" NAME="ImageDataLoader_tf2 Coverage Results" MODIFIED="1646838635507" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tensorflow_utils/tensorflow_datagenerators" />
+    <SUITE FILE_PATH="coverage/datatools$gradcam.coverage" NAME="gradcam Coverage Results" MODIFIED="1693994697400" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/visualization/utkuozbulak_lib" />
+    <SUITE FILE_PATH="coverage/datatools$RNN_models.coverage" NAME="RNN_models Coverage Results" MODIFIED="1656661911520" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_utils/models" />
+    <SUITE FILE_PATH="coverage/datatools$embeddings_extraction_audio_torch.coverage" NAME="embeddings_extraction_audio_torch Coverage Results" MODIFIED="1706696423631" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/feature_extraction" />
   </component>
 </project>
