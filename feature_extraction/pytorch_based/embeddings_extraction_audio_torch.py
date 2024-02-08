@@ -229,3 +229,9 @@ class AudioEmbeddingsExtractor:
 
         del chunks
         return extracted_features
+
+
+if __name__=="__main__":
+    extractor = AudioEmbeddingsExtractor(extractor_type='AudioSpectrogramTransformer', frame_rate=16000)
+    audio = np.random.randint(-32768, 32767, 16000*5)
+    features = extractor.extract_features_audio((audio, 16000), chunk_size=1)
