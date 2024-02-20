@@ -105,6 +105,8 @@ class EmbeddingsExtractor():
                                                              verbose=verbose, output_path=output_path)
         else:
             raise TypeError(f"Unknown data type {type(data)}")
+        if output_path is not None:
+            return None
         return embeddings.detach().cpu().numpy()
 
     def __extract_embeddings_one_image(self, image: Union[np.ndarray, torch.Tensor]) -> Union[torch.Tensor]:
