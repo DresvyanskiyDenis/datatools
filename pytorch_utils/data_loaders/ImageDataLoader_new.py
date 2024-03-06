@@ -12,7 +12,8 @@ from torchvision.io import read_image
 class ImageDataLoader(Dataset):
     def __init__(self, paths_with_labels:pd.DataFrame, preprocessing_functions:List[Callable]=None,
                  augmentation_functions:Dict[Callable, float]=None, shuffle:bool=False,
-                 output_labels:Optional[bool]=True, output_paths:Optional[bool]=False):
+                 output_labels:Optional[bool]=True, labels_columns:Optional[List[str]]=None,
+                 output_paths:Optional[bool]=False):
         """Image data loader for PyTorch models. Apart from the loading on-the-fly, it preprocesses and augments images if specified.
            paths_with_labels should be passed as a pandas DataFrame with following columns: ['path','label_0','label_1',...,'label_n'].
 
@@ -26,6 +27,8 @@ class ImageDataLoader(Dataset):
                 Whether to shuffle data or not.
         :param output_labels: Optional[bool]
                 Whether to output labels or not. If True, then __getitem__ will return image and label, else only image.
+        :param labels_columns: Optional[List[str]]
+                List of columns with labels. If None, then all columns except 'path' will be considered as labels.
         :param output_paths: Optional[bool]
                 Whether to output paths or not. If True, then __getitem__ will return path in addition to the overall output.
         """
@@ -38,7 +41,10 @@ class ImageDataLoader(Dataset):
         # divide paths_with_labels into paths and labels
         self.img_paths = self.paths_with_labels[['path']]
         if self.output_labels:
-            self.labels = self.paths_with_labels.drop(columns=['path'])
+            if labels_columns:
+                self.labels = self.paths_with_labels[labels_columns]
+            else:
+                self.labels = self.paths_with_labels.drop(columns=['path'])
         del self.paths_with_labels
         self.preprocessing_functions = preprocessing_functions
         self.augmentation_functions = augmentation_functions
