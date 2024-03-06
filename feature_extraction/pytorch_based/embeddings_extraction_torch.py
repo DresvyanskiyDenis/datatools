@@ -73,7 +73,7 @@ class EmbeddingsExtractor():
         return self.model[tmp_idx].out_features
 
     def extract_embeddings(self, data: data_types, *, batch_size: Optional[int] = None,
-                           num_workers: Optional[int] = None,
+                           num_workers: Optional[int] = None, labels_columns: Optional[List[str]] = None,
                            output_path: Optional[str] = None, verbose: Optional[bool] = False) \
             -> Union[torch.Tensor, None]:
         """ Extracts embeddings from provided data. Data can be represented as:
@@ -144,6 +144,7 @@ class EmbeddingsExtractor():
         return embeddings
 
     def __extract_embeddings_dataframe(self, dataframe: pd.DataFrame, *, batch_size: Optional[int] = None,
+                                       labels_columns: Optional[List[str]] = None,
                                        num_workers: Optional[int] = None, verbose: Optional[bool] = False,
                                        output_path: str) -> None:
         """ Extracts embeddings from dataframe with paths to images.
@@ -171,7 +172,9 @@ class EmbeddingsExtractor():
                              "have the name 'path'")
         # create dataloader from dataframe
         dataloader = ImageDataLoader(paths_with_labels=dataframe, preprocessing_functions=self.preprocessing_functions,
-                                     augmentation_functions=None, shuffle=False, output_labels=False, output_paths=True)
+                                     augmentation_functions=None, shuffle=False, output_paths=True,
+                                     output_labels=False if labels_columns is None else True,
+                                     labels_columns=labels_columns)
         dataloader = torch.utils.data.DataLoader(dataloader, batch_size=batch_size,
                                                  num_workers=num_workers, shuffle=False)
         # extract embeddings. Remember that to alleviate the usage of those in the future, we will save the paths to images
