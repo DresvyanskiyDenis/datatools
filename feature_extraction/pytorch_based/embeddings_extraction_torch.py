@@ -102,7 +102,8 @@ class EmbeddingsExtractor():
             embeddings = self.__extract_embeddings_list_images(data)
         elif isinstance(data, pd.DataFrame):
             embeddings = self.__extract_embeddings_dataframe(data, batch_size=batch_size, num_workers=num_workers,
-                                                             verbose=verbose, output_path=output_path)
+                                                             verbose=verbose, output_path=output_path,
+                                                             labels_columns=labels_columns)
         else:
             raise TypeError(f"Unknown data type {type(data)}")
         if output_path is not None:
@@ -182,10 +183,11 @@ class EmbeddingsExtractor():
         # will be the values of embeddings with names "embedding_0", "embedding_1", etc.
         # Also, to save the memory consumption, we will save the embeddings in the csv file batch-wise
         self.__extract_embeddings_from_dataloader_and_save_them(dataloader=dataloader, output_path=output_path,
-                                                                verbose=verbose)
+                                                                verbose=verbose, labels_columns=labels_columns)
 
     def __extract_embeddings_from_dataloader_and_save_them(self, dataloader: torch.utils.data.DataLoader,
                                                            output_path: str = None,
+                                                           labels_columns: Optional[List[str]] = None,
                                                            verbose: Optional[bool] = False) -> None:
         """ Extracts embeddings from dataloader and saves them to the csv file.
 
@@ -193,6 +195,8 @@ class EmbeddingsExtractor():
                 The dataloader to extract embeddings from.
         :param output_path: Optional[str]
                 The path to save the embeddings. This should be the path to the csv file.
+        :param labels_columns: Optional[List[str]]
+                List of columns with labels. If None, then all columns except 'path' will be considered as labels.
         :param verbose: Optional[bool]
                 If True, then prints the progress of extraction.
         :return: None
@@ -202,17 +206,31 @@ class EmbeddingsExtractor():
         columns_names = ['path']
         for i in range(self.output_shape):
             columns_names.append('embedding_' + str(i))
+        if labels_columns is not None:
+            columns_names = columns_names + labels_columns
         # extract embeddings batch-wise and save them first to dataframe, then dump to the csv file, and then clear
         # the dataframe
         # create empty csv file to dump the columns names
         pd.DataFrame(columns=columns_names).to_csv(output_path, index=False)
-        for batch, paths in tqdm(dataloader, desc='Extracting embeddings', disable=not verbose):
-            batch = batch.to(self.device)
+        for data in tqdm(dataloader, desc='Extracting embeddings', disable=not verbose):
+            if labels_columns is not None:
+                batch, labels, paths = data
+            else:
+                batch, paths = data
+            batch = batch.float().to(self.device)
             with torch.no_grad():
                 batch_embeddings = self.model(batch)
             batch_embeddings = batch_embeddings.cpu().numpy()
-            batch_embeddings = np.concatenate([np.expand_dims(paths, axis=1), batch_embeddings], axis=1)
+            if labels_columns is not None:
+                labels = labels.cpu().numpy()
+                batch_embeddings = np.concatenate([batch_embeddings, labels], axis=1)
+            paths = np.array(paths)
+            # concatenate one column of zeros to the batch_embeddings to replace it later with the paths to images
+            batch_embeddings = np.concatenate([np.zeros((paths.shape[0], 1)), batch_embeddings], axis=1)
+            # create dataframe
             batch_embeddings = pd.DataFrame(batch_embeddings, columns=columns_names)
+            # replace the first column with the paths to images
+            batch_embeddings['path'] = paths
             # dump to the csv file, writing on top of the existing data
             batch_embeddings.to_csv(output_path, index=False, mode='a', header=None)
 
