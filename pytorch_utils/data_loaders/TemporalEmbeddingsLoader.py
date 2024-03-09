@@ -13,6 +13,7 @@ class TemporalEmbeddingsLoader(Dataset):
                  feature_columns:List[str],
                  window_size:Union[int, float], stride:Union[int, float],
                  consider_timestamps:Optional[bool]=False,
+                 only_consecutive_windows:Optional[bool]=True,
                  preprocessing_functions:List[Callable]=None, shuffle:bool=False):
         super().__init__()
         self.embeddings_with_labels = embeddings_with_labels
@@ -21,6 +22,7 @@ class TemporalEmbeddingsLoader(Dataset):
         self.window_size = window_size
         self.stride = stride
         self.consider_timestamps = consider_timestamps
+        self.only_consecutive_windows = only_consecutive_windows
         self.preprocessing_functions = preprocessing_functions
         self.shuffle = shuffle
 
@@ -95,7 +97,10 @@ class TemporalEmbeddingsLoader(Dataset):
         """ Cuts all data on windows. """
         self.cut_windows = OrderedDict()
         for key, frames in self.embeddings_with_labels.items():
-            self.cut_windows[key] = self.__create_windows_out_of_frames(frames, self.window_size, self.stride)
+            if self.only_consecutive_windows:
+                self.cut_windows[key] = self.__cut_sequence_on_consecutive_windows(frames, self.window_size, self.stride)
+            else:
+                self.cut_windows[key] = self.__create_windows_out_of_frames(frames, self.window_size, self.stride)
         # check if there were some sequences with not enough frames to create a window
         # they have been returned as None, so we need to remove them
         self.cut_windows = OrderedDict({key: windows for key, windows in self.cut_windows.items() if windows is not None})
@@ -156,6 +161,58 @@ class TemporalEmbeddingsLoader(Dataset):
             window_end += stride
         # add last window if there is not enough values to fill it
         if window_start < len(sequence):
+            windows.append(sequence.iloc[-window_size:])
+        return windows
+
+
+    def __cut_sequence_on_consecutive_windows(self, sequence:pd.DataFrame, window_size:int, stride:int)->Union[List[pd.DataFrame],None]:
+        # check if the sequence is long enough
+        # if not, return None and this sequence will be skipped in the __cut_all_data_on_windows method
+        if sequence.shape[0] < window_size:
+            return None
+        # calculate the number of frames in the window
+        if self.consider_timestamps:
+            timestep = min(sequence['timestep'].iloc[1] - sequence['timestep'].iloc[0],
+                           sequence['timestep'].iloc[-1] - sequence['timestep'].iloc[-2])
+            window_size = int(np.round(window_size / timestep))
+            # stride in seconds needs to be converted to number of frames
+            stride = int(np.round(stride / timestep))
+        # the problem is that the timesteps are not monotonically increasing. THerefore, we need to cut the data on windows
+        # so that the timesteps within the window increase monotonically (with the same timestep/value).
+        # The procedure is the following:
+        # 1. Get the value of first timestep
+        # 2. Get the value of last timestep
+        # 3. Get the difference between the first and the last timestep
+        # 4. Calculate the value that should be between the first and the last timestep depending on the size of the window
+        # 5. Compare the value from the step 4 with the value from the step 3. If it is not equal, do not take this window
+        # 6. If it is equal, take the window
+        # !!! IMPORTANT!!! we cut windows in this function based on frame_num column, not on the timestep column
+        windows = []
+        # cut sequence on windows using while and shifting the window every step
+        window_start = 0
+        window_end = window_start + window_size
+        while window_end <= len(sequence):
+            window = sequence.iloc[window_start:window_end]
+            # check if the timesteps are monotonically increasing
+            first_timestep = window['frame_num'].iloc[0]
+            last_timestep = window['frame_num'].iloc[-1]
+            # take the most often difference between the timesteps
+            timestep_difference = window['frame_num'].diff().round(2).mode().values[0]
+            # calculate actual range in timesteps and the value that should be in case we have monotonically increasing timesteps
+            actual_range = np.round(last_timestep - first_timestep, 2)
+            reference_range = np.round(timestep_difference * (window_size-1), 2)
+            if actual_range == reference_range:
+                windows.append(window)
+            window_start += stride
+            window_end += stride
+        # also add the last window as it is usually ignored
+        window_start = len(sequence)-window_size
+        window_end = len(sequence)
+        start_timestamp = sequence['frame_num'].iloc[window_start]
+        end_timestamp = sequence['frame_num'].iloc[window_end-1]
+        timestep_difference = end_timestamp - start_timestamp
+        timestep_value = start_timestamp + (window_size-1)*timestep_difference
+        if timestep_value == end_timestamp:
             windows.append(sequence.iloc[-window_size:])
         return windows
 
